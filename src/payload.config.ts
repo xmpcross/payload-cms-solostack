@@ -30,6 +30,8 @@ export default buildConfig({
   admin: {
     components: {
       beforeLogin: ['@/components/BeforeLogin'],
+      beforeNavLinks: ['@/components/admin/DashboardNavLink#DashboardNavLink'],
+      beforeDashboard: ['@/components/BeforeDashboard'],
     },
     importMap: {
       baseDir: path.resolve(dirname),
