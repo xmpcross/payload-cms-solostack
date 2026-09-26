@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import React from 'react'
 import { DealsClient, DealItem } from '@/components/marketing/DealsClient'
 import { Tag, ShieldCheck, Flame, Percent, CheckCircle2 } from 'lucide-react'
+import { FAQSection } from '@/components/FAQSection'
 
 export const revalidate = 300 // Revalidate cache every 5 minutes
 
@@ -81,6 +82,29 @@ export default async function DealsPage() {
     })),
   }
 
+  const dealsFaqs = [
+    {
+      question: 'Are deal-hunting communities safe to use?',
+      answer:
+        'Yes, reputable deal-hunting communities and curated voucher hubs are safe. Community members and editors regularly test coupon codes, verify affiliate tracking links, and filter out unauthorized sellers. Always ensure checkout is completed on the verified merchant platform and never share sensitive financial information on public forums.',
+    },
+    {
+      question: 'How can I tell if a deal is genuinely a good price?',
+      answer:
+        "Compare prices across multiple certified retailers, inspect historical pricing averages, and factor in future subscription renewals. A genuine discount represents verifiable savings against the tool's standard 90-day market price, not an inflated reference MSRP.",
+    },
+    {
+      question: 'Are deal communities free to join?',
+      answer:
+        'Yes, top deal communities and directories are 100% free for members. They are sustained through commercial affiliate partnerships with software and hardware brands, who pay a referral commission when you purchase through verified partner links at zero extra cost to you.',
+    },
+    {
+      question: 'What is the difference between a coupon site and a deal community?',
+      answer:
+        'A generic coupon site relies on automated aggregators that frequently display expired or non-working promotional codes. A curated deal community features active editorial vetting, user feedback on product reliability, and real-time alerts on exclusive partner vouchers and temporary price errors.',
+    },
+  ]
+
   return (
     <div className="pt-24 pb-28 min-h-screen bg-background text-foreground">
       {/* JSON-LD Structured Data */}
@@ -133,6 +157,13 @@ export default async function DealsPage() {
 
         {/* Main Interactive Deals Catalog */}
         <DealsClient initialDeals={deals} />
+
+        {/* Frequently Asked Questions (FAQ) Accordion matching uploaded design */}
+        <div className="pt-8 border-t border-border">
+          <div className="max-w-4xl mx-auto">
+            <FAQSection items={dealsFaqs} />
+          </div>
+        </div>
       </div>
     </div>
   )

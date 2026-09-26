@@ -35,9 +35,39 @@ const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   return relationTo === 'posts' ? `/posts/${slug}` : `/${slug}`
 }
 
+const slugify = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+const extractTextFromChildren = (children: any[]): string => {
+  if (!Array.isArray(children)) return ''
+  return children
+    .map((c) => {
+      if (typeof c === 'string') return c
+      if (c && typeof c === 'object') {
+        if ('text' in c && typeof c.text === 'string') return c.text
+        if ('children' in c && Array.isArray(c.children)) return extractTextFromChildren(c.children)
+      }
+      return ''
+    })
+    .join('')
+}
+
 const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) => ({
   ...defaultConverters,
   ...LinkJSXConverter({ internalDocToHref }),
+  heading: ({ node, nodesToJSX }) => {
+    const Tag = node.tag
+    const text = extractTextFromChildren(node.children)
+    const id = slugify(text)
+    return (
+      <Tag id={id} className="scroll-mt-28 group relative">
+        {nodesToJSX({ nodes: node.children })}
+      </Tag>
+    )
+  },
   blocks: {
     banner: ({ node }) => <BannerBlock className="col-start-2 mb-4" {...node.fields} />,
     mediaBlock: ({ node }) => (
