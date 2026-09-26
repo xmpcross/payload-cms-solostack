@@ -971,6 +971,9 @@ export interface AffiliateCoupon {
   commissions?: number | null;
   epc?: number | null;
   grossCommission?: number | null;
+  isActive?: boolean | null;
+  expiryDate?: string | null;
+  terms?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1671,6 +1674,9 @@ export interface AffiliateCouponsSelect<T extends boolean = true> {
   commissions?: T;
   epc?: T;
   grossCommission?: T;
+  isActive?: T;
+  expiryDate?: T;
+  terms?: T;
   updatedAt?: T;
   createdAt?: T;
 }
