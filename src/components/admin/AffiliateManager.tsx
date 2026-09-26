@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import './AffiliateManager.css'
 
 export interface AffiliateManagerProps {
   initialTab?: 'settings' | 'import-sources' | 'analytics'
@@ -9,10 +10,6 @@ export interface AffiliateManagerProps {
 export default function AffiliateManager({ initialTab = 'settings' }: AffiliateManagerProps) {
   const [activeTab, setActiveTab] = useState<'settings' | 'import-sources' | 'analytics'>(initialTab)
   const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // CJ Form State
   const [cjCid, setCjCid] = useState('8033258')
@@ -48,6 +45,7 @@ export default function AffiliateManager({ initialTab = 'settings' }: AffiliateM
   const [analyticsData, setAnalyticsData] = useState<any>(null)
 
   useEffect(() => {
+    setMounted(true)
     fetch('/api/affiliate?action=diagnosis')
       .then((res) => res.json())
       .then((data) => {
@@ -145,36 +143,38 @@ export default function AffiliateManager({ initialTab = 'settings' }: AffiliateM
     }
   }
 
+  if (!mounted) {
+    return (
+      <div className="affiliate-manager-container">
+        <p style={{ color: '#6E6B64', fontSize: '13px' }}>Loading Affiliate & Revenue Suite...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full font-sans bg-[#F9F8F3] text-gray-800 p-4 md:p-8 rounded-xl border border-stone-200 my-4 shadow-sm">
+    <div className="affiliate-manager-container">
       {/* Header Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Affiliate & Revenue Management</h1>
-          <p className="text-sm text-stone-500">Configure CJ Affiliate & Awin network APIs, sync feeds, and track conversion attribution.</p>
+      <div className="affiliate-header">
+        <div className="affiliate-title-box">
+          <h1>Affiliate & Revenue Management</h1>
+          <p>Configure CJ Affiliate & Awin network APIs, sync feeds, and track conversion attribution.</p>
         </div>
-        <div className="flex bg-stone-200/60 p-1 rounded-lg">
+        <div className="affiliate-tabs-nav">
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
-              activeTab === 'settings' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'
-            }`}
+            className={`affiliate-tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           >
             API Settings & Link Strategy
           </button>
           <button
             onClick={() => setActiveTab('import-sources')}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
-              activeTab === 'import-sources' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'
-            }`}
+            className={`affiliate-tab-btn ${activeTab === 'import-sources' ? 'active' : ''}`}
           >
             Import Sources & Catalog Seeding
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
-              activeTab === 'analytics' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'
-            }`}
+            className={`affiliate-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
           >
             Earnings & Revenue Analytics
           </button>
@@ -182,113 +182,99 @@ export default function AffiliateManager({ initialTab = 'settings' }: AffiliateM
       </div>
 
       {seedMsg && (
-        <div className="mb-6 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg flex items-center justify-between">
+        <div className="affiliate-alert-banner success">
           <span>{seedMsg}</span>
-          <button onClick={() => setSeedMsg('')} className="text-emerald-600 hover:text-emerald-900 font-bold ml-4">✕</button>
+          <button onClick={() => setSeedMsg('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
         </div>
       )}
 
       {/* TAB 1: API SETTINGS & LINK STRATEGY */}
       {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="affiliate-grid-2">
             {/* CJ Affiliate Card */}
-            <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+            <div className="affiliate-card">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-bold text-stone-900">CJ Affiliate</h2>
-                  <span className="bg-emerald-100/70 border border-emerald-300 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                    {cjStatus}
-                  </span>
+                <div className="affiliate-card-header">
+                  <h2>CJ Affiliate</h2>
+                  <span className="affiliate-badge-connected">{cjStatus}</span>
                 </div>
-                <p className="text-xs text-stone-500 mb-4">Commission Junction REST & GraphQL APIs</p>
+                <div className="affiliate-card-subtitle">Commission Junction REST & GraphQL APIs</div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Link Strategy:</label>
-                  <div className="inline-block bg-stone-100 text-stone-800 font-mono text-xs px-3 py-1.5 rounded-md border border-stone-200">
-                    append_subid (&sid=...)
-                  </div>
+                <div className="affiliate-field-group">
+                  <span className="affiliate-label">Link Strategy:</span>
+                  <div className="affiliate-strategy-pill">append_subid (&sid=...)</div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Requestor CID (Publisher ID)</label>
+                <div className="affiliate-field-group">
+                  <label className="affiliate-label">Requestor CID (Publisher ID)</label>
                   <input
                     type="text"
                     value={cjCid}
                     onChange={(e) => setCjCid(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-800 font-mono focus:ring-2 focus:ring-stone-400 focus:outline-none"
+                    className="affiliate-input"
                   />
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Personal Access Token (PAT)</label>
+                <div className="affiliate-field-group">
+                  <label className="affiliate-label">Personal Access Token (PAT)</label>
                   <input
                     type="password"
                     value={cjPat}
                     onChange={(e) => setCjPat(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-800 font-mono focus:ring-2 focus:ring-stone-400 focus:outline-none"
+                    className="affiliate-input"
                   />
-                  <p className="text-[11px] text-stone-400 mt-1">Configured securely in environment variables & encrypted DB.</p>
+                  <p className="affiliate-hint">Configured securely in environment variables & encrypted DB.</p>
                 </div>
               </div>
 
-              <div>
-                {cjMsg && <p className="text-xs text-stone-600 mb-2 font-medium">{cjMsg}</p>}
-                <button
-                  onClick={handleTestCJ}
-                  className="w-full bg-stone-900 hover:bg-black text-white font-semibold text-sm py-2.5 rounded-lg transition-colors shadow"
-                >
+              <div style={{ marginTop: '16px' }}>
+                {cjMsg && <p style={{ fontSize: '12px', color: '#146637', marginBottom: '8px' }}>{cjMsg}</p>}
+                <button onClick={handleTestCJ} className="affiliate-btn-dark affiliate-btn-full">
                   Test CJ connection
                 </button>
               </div>
             </div>
 
             {/* Awin Network Card */}
-            <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+            <div className="affiliate-card">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-bold text-stone-900">Awin Network</h2>
-                  <span className="bg-emerald-100/70 border border-emerald-300 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                    {awinStatus}
-                  </span>
+                <div className="affiliate-card-header">
+                  <h2>Awin Network</h2>
+                  <span className="affiliate-badge-connected">{awinStatus}</span>
                 </div>
-                <p className="text-xs text-stone-500 mb-4">Awin Publisher Data API v2</p>
+                <div className="affiliate-card-subtitle">Awin Publisher Data API v2</div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Link Strategy:</label>
-                  <div className="inline-block bg-stone-100 text-stone-800 font-mono text-xs px-3 py-1.5 rounded-md border border-stone-200">
-                    template (URL interpolation)
-                  </div>
+                <div className="affiliate-field-group">
+                  <span className="affiliate-label">Link Strategy:</span>
+                  <div className="affiliate-strategy-pill">template (URL interpolation)</div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Publisher ID</label>
+                <div className="affiliate-field-group">
+                  <label className="affiliate-label">Publisher ID</label>
                   <input
                     type="text"
                     value={awinPubId}
                     onChange={(e) => setAwinPubId(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-800 font-mono focus:ring-2 focus:ring-stone-400 focus:outline-none"
+                    className="affiliate-input"
                   />
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">API Token</label>
+                <div className="affiliate-field-group">
+                  <label className="affiliate-label">API Token</label>
                   <input
                     type="password"
                     value={awinToken}
                     onChange={(e) => setAwinToken(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-800 font-mono focus:ring-2 focus:ring-stone-400 focus:outline-none"
+                    className="affiliate-input"
                   />
-                  <p className="text-[11px] text-stone-400 mt-1">Configured securely in environment variables & encrypted DB.</p>
+                  <p className="affiliate-hint">Configured securely in environment variables & encrypted DB.</p>
                 </div>
               </div>
 
-              <div>
-                {awinMsg && <p className="text-xs text-stone-600 mb-2 font-medium">{awinMsg}</p>}
-                <button
-                  onClick={handleTestAwin}
-                  className="w-full bg-stone-900 hover:bg-black text-white font-semibold text-sm py-2.5 rounded-lg transition-colors shadow"
-                >
+              <div style={{ marginTop: '16px' }}>
+                {awinMsg && <p style={{ fontSize: '12px', color: '#146637', marginBottom: '8px' }}>{awinMsg}</p>}
+                <button onClick={handleTestAwin} className="affiliate-btn-dark affiliate-btn-full">
                   Test Awin connection
                 </button>
               </div>
@@ -296,39 +282,45 @@ export default function AffiliateManager({ initialTab = 'settings' }: AffiliateM
           </div>
 
           {/* Link Strategy Diagnosis & Live Preview */}
-          <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-stone-900 mb-1">Link Strategy Diagnosis & Live Preview</h2>
-            <p className="text-xs text-stone-500 mb-6">
+          <div className="affiliate-diag-card">
+            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#161513', margin: '0 0 4px 0' }}>
+              Link Strategy Diagnosis & Live Preview
+            </h2>
+            <p style={{ fontSize: '12px', color: '#6E6B64', margin: '0 0 16px 0' }}>
               Different affiliate networks use distinct link building mechanics. Use this diagnostic tool to test how incoming click IDs are appended for both strategy types.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="affiliate-grid-2">
               {/* Awin Box */}
-              <div className="bg-[#F6F5F0] border border-stone-200 rounded-lg p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm text-stone-900">Awin Strategy: template</span>
-                  <span className="text-xs italic text-stone-500 font-mono">Placeholder Replacement</span>
+              <div className="affiliate-diag-inner">
+                <div className="affiliate-diag-header">
+                  <span className="affiliate-diag-title">Awin Strategy: template</span>
+                  <span className="affiliate-diag-subtitle">Placeholder Replacement</span>
                 </div>
-                <p className="text-xs text-stone-600 mb-3">
+                <p className="affiliate-diag-desc">
                   Interpolates {'{publisherId}'}, {'{merchantId}'}, {'{destinationUrl}'}, and {'{clickref}'}.
                 </p>
-                <div className="text-[11px] font-semibold text-stone-500 mb-1">Generated Deep Link Output:</div>
-                <div className="bg-white border border-stone-300 rounded p-3 text-[11px] font-mono text-stone-800 break-all select-all">
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#6E6B64', marginBottom: '4px' }}>
+                  Generated Deep Link Output:
+                </div>
+                <div className="affiliate-code-output select-all">
                   {diagnosis.awinOutput}
                 </div>
               </div>
 
               {/* CJ Box */}
-              <div className="bg-[#F6F5F0] border border-stone-200 rounded-lg p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm text-stone-900">CJ Strategy: append_subid</span>
-                  <span className="text-xs italic text-stone-500 font-mono">Direct Parameter Appending</span>
+              <div className="affiliate-diag-inner">
+                <div className="affiliate-diag-header">
+                  <span className="affiliate-diag-title">CJ Strategy: append_subid</span>
+                  <span className="affiliate-diag-subtitle">Direct Parameter Appending</span>
                 </div>
-                <p className="text-xs text-stone-600 mb-3">
+                <p className="affiliate-diag-desc">
                   CJ provides a ready-built tracking link (anrdoezrs.net). The engine directly appends &sid=clk_demo_902_10.
                 </p>
-                <div className="text-[11px] font-semibold text-stone-500 mb-1">Generated Ready-Built CJ Link Output:</div>
-                <div className="bg-white border border-stone-300 rounded p-3 text-[11px] font-mono text-stone-800 break-all select-all">
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#6E6B64', marginBottom: '4px' }}>
+                  Generated Ready-Built CJ Link Output:
+                </div>
+                <div className="affiliate-code-output select-all">
                   {diagnosis.cjOutput}
                 </div>
               </div>
@@ -339,277 +331,213 @@ export default function AffiliateManager({ initialTab = 'settings' }: AffiliateM
 
       {/* TAB 2: IMPORT SOURCES */}
       {activeTab === 'import-sources' && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-stone-900">Import sources</h2>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#161513', margin: '0 0 16px 0' }}>Import sources</h2>
 
           {/* Product Showcase Catalog Banner Card */}
-          <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-bold text-stone-900">Product Showcase Catalog</h3>
-                <span className="bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded tracking-wide">
-                  10,000 COUPONS • 200 BRANDS
-                </span>
+          <div className="affiliate-card" style={{ marginBottom: '20px', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ maxWidth: '750px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#161513' }}>Product Showcase Catalog</h3>
+                <span className="affiliate-badge-connected">10,000 COUPONS • 200 BRANDS</span>
               </div>
-              <p className="text-xs text-stone-600 leading-relaxed">
+              <p style={{ fontSize: '12px', color: '#524F48', margin: 0, lineHeight: '1.5' }}>
                 Non-destructively populates 200 real-world merchant brands (Nike, Sephora, Apple, NordVPN, Hostinger, Booking.com, Target, etc.) and 10,000 verified coupons. All stores are pre-mapped with Awin & CJ affiliate link structures. Your existing database records are safely preserved.
               </p>
             </div>
             <button
               onClick={handleSeedCatalog}
               disabled={seedingLoading}
-              className="bg-stone-900 hover:bg-black text-white font-semibold text-xs px-5 py-3 rounded-lg shadow whitespace-nowrap transition-colors disabled:opacity-50"
+              className="affiliate-btn-dark"
             >
               {seedingLoading ? 'Seeding Catalog...' : 'Seed Showcase Catalog (10k)'}
             </button>
           </div>
 
           {/* Two-column sync cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="affiliate-grid-2">
+            <div className="affiliate-card">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-base font-bold text-stone-900">CJ Affiliate network</h3>
-                  <span className="bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                    REST & GRAPHQL ACTIVE
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: '#161513' }}>CJ Affiliate network</h3>
+                  <span className="affiliate-badge-connected">REST & GRAPHQL ACTIVE</span>
                 </div>
-                <p className="text-xs text-stone-600 mb-6">
+                <p style={{ fontSize: '12px', color: '#524F48', margin: '0 0 16px 0' }}>
                   Syncs advertiser directories, text links & vouchers, and GraphQL commission attribution.
                 </p>
               </div>
-              <button
-                onClick={() => handleSyncFeed('cj')}
-                disabled={cjSyncLoading}
-                className="self-end bg-stone-900 hover:bg-black text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors disabled:opacity-50"
-              >
-                {cjSyncLoading ? 'Syncing CJ...' : 'Sync CJ now'}
-              </button>
+              <div style={{ textAlign: 'right' }}>
+                <button
+                  onClick={() => handleSyncFeed('cj')}
+                  disabled={cjSyncLoading}
+                  className="affiliate-btn-dark"
+                >
+                  {cjSyncLoading ? 'Syncing CJ...' : 'Sync CJ now'}
+                </button>
+              </div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+            <div className="affiliate-card">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-base font-bold text-stone-900">Awin network</h3>
-                  <span className="bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                    LIVE FEED ACTIVE
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: '#161513' }}>Awin network</h3>
+                  <span className="affiliate-badge-connected">LIVE FEED ACTIVE</span>
                 </div>
-                <p className="text-xs text-stone-600 mb-6">
+                <p style={{ fontSize: '12px', color: '#524F48', margin: '0 0 16px 0' }}>
                   Fetches network-wide offers (membership: "all"). Joined offers map to voucher codes.
                 </p>
               </div>
-              <button
-                onClick={() => handleSyncFeed('awin')}
-                disabled={awinSyncLoading}
-                className="self-end bg-stone-900 hover:bg-black text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors disabled:opacity-50"
-              >
-                {awinSyncLoading ? 'Syncing Awin...' : 'Sync Awin now'}
-              </button>
+              <div style={{ textAlign: 'right' }}>
+                <button
+                  onClick={() => handleSyncFeed('awin')}
+                  disabled={awinSyncLoading}
+                  className="affiliate-btn-dark"
+                >
+                  {awinSyncLoading ? 'Syncing Awin...' : 'Sync Awin now'}
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Search & Export Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <input
               type="text"
               placeholder="Search import feeds..."
               value={feedSearch}
               onChange={(e) => setFeedSearch(e.target.value)}
-              className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-400 w-full sm:w-72 shadow-sm"
+              className="affiliate-input"
+              style={{ width: '280px' }}
             />
-            <button className="bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-semibold px-4 py-2 rounded-lg transition-colors border border-stone-300">
-              Export CSV
-            </button>
+            <button className="affiliate-btn-secondary">Export CSV</button>
           </div>
 
           {/* Feeds Data Table */}
-          <div className="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#F6F5F0] border-b border-stone-200 text-stone-700 text-xs font-bold">
-                    <th className="py-3 px-4">Feed name ↕</th>
-                    <th className="py-3 px-4">Network ↕</th>
-                    <th className="py-3 px-4">Status ↕</th>
-                    <th className="py-3 px-4">Last sync ↕</th>
-                    <th className="py-3 px-4">Added ↕</th>
-                    <th className="py-3 px-4">Updated ↕</th>
-                    <th className="py-3 px-4">Skipped ↕</th>
-                    <th className="py-3 px-4">Failed ↕</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-200 text-xs text-stone-800">
-                  {feeds
-                    .filter((f) => f.feedName.toLowerCase().includes(feedSearch.toLowerCase()))
-                    .map((feed) => (
-                      <tr key={feed.id} className="hover:bg-stone-50 transition-colors">
-                        <td className="py-3.5 px-4 font-semibold text-stone-900">{feed.feedName}</td>
-                        <td className="py-3.5 px-4 text-stone-600">{feed.network}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded">
-                            {feed.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-stone-600">{feed.lastSync}</td>
-                        <td className="py-3.5 px-4 font-mono">{feed.added}</td>
-                        <td className="py-3.5 px-4 font-mono">{feed.updated}</td>
-                        <td className="py-3.5 px-4 font-mono">{feed.skipped}</td>
-                        <td className="py-3.5 px-4 font-mono">{feed.failed}</td>
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => handleSyncFeed(feed.network.includes('CJ') ? 'cj' : 'awin')}
-                            className="bg-stone-900 hover:bg-black text-white text-[11px] font-semibold px-3 py-1.5 rounded transition-colors"
-                          >
-                            Run now
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="affiliate-table-wrapper">
+            <table className="affiliate-table">
+              <thead>
+                <tr>
+                  <th>Feed name ↕</th>
+                  <th>Network ↕</th>
+                  <th>Status ↕</th>
+                  <th>Last sync ↕</th>
+                  <th>Added ↕</th>
+                  <th>Updated ↕</th>
+                  <th>Skipped ↕</th>
+                  <th>Failed ↕</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feeds
+                  .filter((f) => f.feedName.toLowerCase().includes(feedSearch.toLowerCase()))
+                  .map((feed) => (
+                    <tr key={feed.id}>
+                      <td style={{ fontWeight: '600' }}>{feed.feedName}</td>
+                      <td>{feed.network}</td>
+                      <td><span className="affiliate-badge-connected">{feed.status}</span></td>
+                      <td>{feed.lastSync}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{feed.added}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{feed.updated}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{feed.skipped}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{feed.failed}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          onClick={() => handleSyncFeed(feed.network.includes('CJ') ? 'cj' : 'awin')}
+                          className="affiliate-btn-action"
+                        >
+                          Run now
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {/* TAB 3: EARNINGS & REVENUE ANALYTICS */}
       {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold text-stone-900">Earnings & Revenue Analytics</h2>
-            <div className="mt-2 p-3 bg-amber-50/80 border border-amber-200 text-amber-900 text-xs rounded-lg flex items-center gap-2">
-              <span>⚠️</span>
-              <span>
-                Note: Affiliate networks confirm transactions on varying reconciliation schedules; current figures adjust automatically upon final network reconciliation.
-              </span>
-            </div>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#161513', margin: '0 0 6px 0' }}>Earnings & Revenue Analytics</h2>
+          <div className="affiliate-alert-banner warning">
+            <span>⚠️ Note: Affiliate networks confirm transactions on varying reconciliation schedules; current figures adjust automatically upon final network reconciliation.</span>
           </div>
 
           {/* 6 Top Metric Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Clicks</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.clicks || 25}
-              </div>
-              <div className="text-[10px] text-emerald-600 font-semibold mt-1">+5% vs previous period</div>
+          <div className="affiliate-kpi-grid">
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Clicks</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.clicks || 25}</div>
+              <div className="affiliate-kpi-delta">+5% vs previous period</div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Conversions</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.conversions || 0}
-              </div>
-              <div className="text-[10px] text-stone-400 font-semibold mt-1">+0% vs previous period</div>
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Conversions</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.conversions || 0}</div>
+              <div className="affiliate-kpi-delta neutral">+0% vs previous period</div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Conversion Rate</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.conversionRate || '0.00%'}
-              </div>
-              <div className="text-[10px] text-stone-400 font-semibold mt-1">+0% vs previous period</div>
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Conversion Rate</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.conversionRate || '0.00%'}</div>
+              <div className="affiliate-kpi-delta neutral">+0% vs previous period</div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Gross Commissions</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.grossCommissions || '$0.00'}
-              </div>
-              <div className="text-[10px] text-stone-400 font-semibold mt-1">+0% vs previous period</div>
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Gross Commissions</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.grossCommissions || '$0.00'}</div>
+              <div className="affiliate-kpi-delta neutral">+0% vs previous period</div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Cashback Paid</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.cashbackPaid || '$0.00'}
-              </div>
-              <div className="text-[10px] text-stone-400 font-semibold mt-1">+0% vs previous period</div>
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Cashback Paid</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.cashbackPaid || '$0.00'}</div>
+              <div className="affiliate-kpi-delta neutral">+0% vs previous period</div>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
-              <div className="text-[11px] font-bold text-stone-500 uppercase">Net Profit</div>
-              <div className="text-2xl font-extrabold text-stone-900 mt-1">
-                {analyticsData?.metrics?.netProfit || '$0.00'}
-              </div>
-              <div className="text-[10px] text-stone-400 font-semibold mt-1">+0% vs previous period</div>
+            <div className="affiliate-kpi-card">
+              <div className="affiliate-kpi-label">Net Profit</div>
+              <div className="affiliate-kpi-value">{analyticsData?.metrics?.netProfit || '$0.00'}</div>
+              <div className="affiliate-kpi-delta neutral">+0% vs previous period</div>
             </div>
           </div>
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-stone-900 uppercase">Gross Commission & Revenue</h3>
-                <span className="text-[10px] text-stone-400">12-week current period vs previous period</span>
-              </div>
-              <div className="h-44 bg-[#FAF9F5] border border-stone-100 rounded-lg flex items-center justify-center text-xs text-stone-400">
-                [ Line Chart Visualization — Gross Commission vs Revenue ]
-              </div>
+          {/* Top Earning Coupons Table */}
+          <div className="affiliate-card" style={{ marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', color: '#161513', margin: 0 }}>
+                Top Earning Coupons
+              </h3>
+              <button className="affiliate-btn-secondary">Export CSV</button>
             </div>
 
-            <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-stone-900 uppercase">Clicks vs. Conversions</h3>
-                <span className="text-[10px] text-stone-400">Traffic volume [left] against merchant sales [right]</span>
-              </div>
-              <div className="h-44 bg-[#FAF9F5] border border-stone-100 rounded-lg flex items-center justify-center text-xs text-stone-400">
-                [ Dual Series Visualization — Clicks (25) vs Conversions (0) ]
-              </div>
-            </div>
-          </div>
-
-          {/* Category Breakdown & Top Coupons */}
-          <div className="space-y-6">
-            <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm">
-              <h3 className="text-xs font-bold text-stone-900 uppercase mb-3">Commission by Category</h3>
-              <div className="space-y-2">
-                {(analyticsData?.categories || []).map((cat: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between text-xs py-1.5 border-b border-stone-100 last:border-none">
-                    <span className="font-semibold text-stone-700">{cat.name}</span>
-                    <span className="font-mono text-stone-500">{cat.revenue}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top Earning Coupons Table */}
-            <div className="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-sm p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="text-xs font-bold text-stone-900 uppercase">Top Earning Coupons</h3>
-                <button className="bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold px-3 py-1 rounded border border-stone-300">
-                  Export CSV
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-[#F6F5F0] border-b border-stone-200 text-stone-700 font-bold">
-                      <th className="py-2.5 px-3">Coupon title ↕</th>
-                      <th className="py-2.5 px-3">Store name ↕</th>
-                      <th className="py-2.5 px-3">Clicks ↕</th>
-                      <th className="py-2.5 px-3">Commissions ↕</th>
-                      <th className="py-2.5 px-3">EPC ↕</th>
-                      <th className="py-2.5 px-3">Gross commission ↕</th>
+            <div className="affiliate-table-wrapper" style={{ margin: 0 }}>
+              <table className="affiliate-table">
+                <thead>
+                  <tr>
+                    <th>Coupon title ↕</th>
+                    <th>Store name ↕</th>
+                    <th>Clicks ↕</th>
+                    <th>Commissions ↕</th>
+                    <th>EPC ↕</th>
+                    <th>Gross commission ↕</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(analyticsData?.coupons || []).map((c: any, i: number) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight: '600' }}>{c.title}</td>
+                      <td>{c.storeName}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{c.clicks}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{c.commissions || 0}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{c.epc || '$0.00'}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{c.grossCommission || '$0.00'}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-200 text-stone-800">
-                    {(analyticsData?.coupons || []).map((c: any, i: number) => (
-                      <tr key={i} className="hover:bg-stone-50">
-                        <td className="py-2.5 px-3 font-semibold text-stone-900">{c.title}</td>
-                        <td className="py-2.5 px-3 text-stone-600">{c.storeName}</td>
-                        <td className="py-2.5 px-3 font-mono">{c.clicks}</td>
-                        <td className="py-2.5 px-3 font-mono">{c.commissions || 0}</td>
-                        <td className="py-2.5 px-3 font-mono">{c.epc || '$0.00'}</td>
-                        <td className="py-2.5 px-3 font-mono">{c.grossCommission || '$0.00'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
