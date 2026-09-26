@@ -98,6 +98,52 @@ export const plugins: Plugin[] = [
       hardware: true,
       stacks: true,
       comparisons: true,
+      'affiliate-coupons': true,
+    },
+    // Direct AI-generated images into the Media collection
+    uploadCollectionSlug: 'media',
+
+    // Lock down AI generation and settings to authenticated admins
+    access: {
+      generate: ({ req }) => Boolean(req.user),
+      settings: ({ req }) => Boolean(req.user),
+    },
+
+    // Silence large terminal banner on every startup/build
+    disableSponsorMessage: true,
+
+    // Avoid redundant schema prompt seeding on production boot
+    generatePromptOnInit: process.env.NODE_ENV !== 'production',
+
+    // Configure providers
+    providers: {
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY,
+      },
+      ...(process.env.ANTHROPIC_API_KEY ? { anthropic: { apiKey: process.env.ANTHROPIC_API_KEY } } : {}),
+      ...(process.env.GOOGLE_GENERATIVE_AI_API_KEY ? { google: { apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY } } : {}),
+      ...(process.env.ELEVENLABS_API_KEY ? { elevenLabs: { apiKey: process.env.ELEVENLABS_API_KEY } } : {}),
+    },
+
+    // Skip technical fields and provide smart SEO prompt templates
+    seedPrompts: ({ path }) => {
+      if (path.endsWith('.slug') || path.endsWith('.id')) return false
+      if (path.endsWith('.meta.description')) {
+        return {
+          data: {
+            prompt: 'Generate an SEO-optimized meta description under 155 characters that summarizes: {{ title }}',
+          },
+        }
+      }
+      return undefined
+    },
+
+    // Expose Compose Settings under Settings group in Admin UI
+    overrideInstructions: {
+      admin: {
+        group: 'Settings',
+        hidden: false,
+      },
     },
   }),
 ]
