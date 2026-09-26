@@ -68,8 +68,31 @@ export default async function StackDetailPage({ params: paramsPromise }: Args) {
 
   const { title, businessModel, description, tools = [], hardware = [] } = stack
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: title,
+    description: description || `Solopreneur tech stack blueprint for ${title}`,
+    itemListElement: [
+      ...tools.map((t: any, idx: number) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        name: t.name,
+      })),
+      ...hardware.map((h: any, idx: number) => ({
+        '@type': 'ListItem',
+        position: tools.length + idx + 1,
+        name: h.name,
+      })),
+    ],
+  }
+
   return (
     <article className="pt-16 pb-24 container max-w-4xl mx-auto px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Button asChild variant="ghost" size="sm" className="mb-6 gap-2 text-muted-foreground">
         <Link href="/stacks">
           <ArrowLeft className="h-4 w-4" />
