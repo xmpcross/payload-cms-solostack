@@ -30,7 +30,6 @@ export default buildConfig({
   admin: {
     components: {
       beforeLogin: ['@/components/BeforeLogin'],
-      beforeDashboard: ['@/components/BeforeDashboard'],
     },
     importMap: {
       baseDir: path.resolve(dirname),
