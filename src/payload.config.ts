@@ -13,6 +13,10 @@ import { Tools } from './collections/Tools'
 import { Hardware } from './collections/Hardware'
 import { Stacks } from './collections/Stacks'
 import { Comparisons } from './collections/Comparisons'
+import { AffiliateNetworks } from './collections/AffiliateNetworks'
+import { AffiliateFeeds } from './collections/AffiliateFeeds'
+import { AffiliateCoupons } from './collections/AffiliateCoupons'
+import { AffiliateClicks } from './collections/AffiliateClicks'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
@@ -61,7 +65,21 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Tools, Hardware, Stacks, Comparisons, Media, Categories, Users],
+  collections: [
+    Pages,
+    Posts,
+    Tools,
+    Hardware,
+    Stacks,
+    Comparisons,
+    AffiliateNetworks,
+    AffiliateFeeds,
+    AffiliateCoupons,
+    AffiliateClicks,
+    Media,
+    Categories,
+    Users,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins,

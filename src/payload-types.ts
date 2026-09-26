@@ -73,6 +73,10 @@ export interface Config {
     hardware: Hardware;
     stacks: Stack;
     comparisons: Comparison;
+    'affiliate-networks': AffiliateNetwork;
+    'affiliate-feeds': AffiliateFeed;
+    'affiliate-coupons': AffiliateCoupon;
+    'affiliate-clicks': AffiliateClick;
     media: Media;
     categories: Category;
     users: User;
@@ -80,6 +84,7 @@ export interface Config {
     forms: Form;
     'form-submissions': FormSubmission;
     search: Search;
+    'plugin-ai-instructions': PluginAiInstruction;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -99,6 +104,10 @@ export interface Config {
     hardware: HardwareSelect<false> | HardwareSelect<true>;
     stacks: StacksSelect<false> | StacksSelect<true>;
     comparisons: ComparisonsSelect<false> | ComparisonsSelect<true>;
+    'affiliate-networks': AffiliateNetworksSelect<false> | AffiliateNetworksSelect<true>;
+    'affiliate-feeds': AffiliateFeedsSelect<false> | AffiliateFeedsSelect<true>;
+    'affiliate-coupons': AffiliateCouponsSelect<false> | AffiliateCouponsSelect<true>;
+    'affiliate-clicks': AffiliateClicksSelect<false> | AffiliateClicksSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -106,6 +115,7 @@ export interface Config {
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
+    'plugin-ai-instructions': PluginAiInstructionsSelect<false> | PluginAiInstructionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -897,6 +907,92 @@ export interface Comparison {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-networks".
+ */
+export interface AffiliateNetwork {
+  id: number;
+  name: string;
+  networkType: 'cj' | 'awin' | 'custom';
+  status?: ('active' | 'inactive' | 'error') | null;
+  linkStrategy: 'append_subid' | 'template';
+  publisherId?: string | null;
+  /**
+   * Stored securely and used for GraphQL & REST API endpoints.
+   */
+  apiToken?: string | null;
+  /**
+   * For template strategy, e.g. https://www.awin1.com/cread.php?awinmid={merchantId}&awinaffid={publisherId}&ued={destinationUrl}&clickref={clickref}
+   */
+  linkTemplate?: string | null;
+  lastSyncAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-feeds".
+ */
+export interface AffiliateFeed {
+  id: number;
+  feedName: string;
+  network: 'cj' | 'awin' | 'showcase';
+  status?: ('ACTIVE' | 'PAUSED' | 'SYNCING' | 'ERROR') | null;
+  lastSync?: string | null;
+  addedCount?: number | null;
+  updatedCount?: number | null;
+  skippedCount?: number | null;
+  failedCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-coupons".
+ */
+export interface AffiliateCoupon {
+  id: number;
+  title: string;
+  storeName: string;
+  network: 'cj' | 'awin' | 'direct';
+  category?:
+    | (
+        | 'Fashion & Apparel'
+        | 'Electronics & Tech'
+        | 'Software & Web Hosting'
+        | 'Travel & Booking'
+        | 'Beauty & Personal Care'
+      )
+    | null;
+  code?: string | null;
+  discountText?: string | null;
+  destinationUrl: string;
+  affiliateUrl: string;
+  clicks?: number | null;
+  commissions?: number | null;
+  epc?: number | null;
+  grossCommission?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-clicks".
+ */
+export interface AffiliateClick {
+  id: number;
+  clickId: string;
+  network: 'cj' | 'awin' | 'direct';
+  merchant: string;
+  clickref?: string | null;
+  destinationUrl?: string | null;
+  referrer?: string | null;
+  converted?: boolean | null;
+  commission?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -966,6 +1062,81 @@ export interface Search {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugin-ai-instructions".
+ */
+export interface PluginAiInstruction {
+  id: number;
+  /**
+   * Please don't change this unless you're sure of what you're doing
+   */
+  'schema-path'?: string | null;
+  /**
+   * Please don't change this unless you're sure of what you're doing
+   */
+  'field-type'?: ('text' | 'textarea' | 'upload' | 'richText') | null;
+  'relation-to'?: string | null;
+  'model-id'?: ('Oai-text' | 'dall-e' | 'gpt-image-1' | 'tts' | 'Oai-object') | null;
+  /**
+   * Please reload your collection after applying the changes
+   */
+  disabled?: boolean | null;
+  /**
+   * Click 'Compose' to run this custom prompt and generate content
+   */
+  prompt?: string | null;
+  images?:
+    | {
+        /**
+         * Please make sure the image is publicly accessible.
+         */
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  system?: string | null;
+  layout?: string | null;
+  'Oai-text-settings'?: {
+    model?:
+      | ('gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'gpt-4.1' | 'gpt-4o' | 'gpt-4-turbo' | 'gpt-4o-mini' | 'gpt-3.5-turbo')
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'dalle-e-settings'?: {
+    version?: ('dall-e-3' | 'dall-e-2') | null;
+    size?: ('256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792') | null;
+    style?: ('vivid' | 'natural') | null;
+    'enable-prompt-optimization'?: boolean | null;
+  };
+  'gpt-image-1-settings'?: {
+    version?: 'gpt-image-1' | null;
+    size?: ('1024x1024' | '1024x1536' | '1536x1024' | 'auto') | null;
+    quality?: ('low' | 'medium' | 'high' | 'auto') | null;
+    output_format?: ('png' | 'jpeg' | 'webp') | null;
+    output_compression?: number | null;
+    background?: ('white' | 'transparent') | null;
+    moderation?: ('auto' | 'low') | null;
+  };
+  'Oai-tts-settings'?: {
+    voice?: ('alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') | null;
+    model?: ('tts-1' | 'tts-1-hd') | null;
+    response_format?: ('mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm') | null;
+    speed?: number | null;
+  };
+  'Oai-object-settings'?: {
+    model?:
+      | ('gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'gpt-4.1' | 'gpt-4o' | 'gpt-4-turbo' | 'gpt-4o-mini' | 'gpt-3.5-turbo')
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1110,6 +1281,22 @@ export interface PayloadLockedDocument {
         value: number | Comparison;
       } | null)
     | ({
+        relationTo: 'affiliate-networks';
+        value: number | AffiliateNetwork;
+      } | null)
+    | ({
+        relationTo: 'affiliate-feeds';
+        value: number | AffiliateFeed;
+      } | null)
+    | ({
+        relationTo: 'affiliate-coupons';
+        value: number | AffiliateCoupon;
+      } | null)
+    | ({
+        relationTo: 'affiliate-clicks';
+        value: number | AffiliateClick;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -1136,6 +1323,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'search';
         value: number | Search;
+      } | null)
+    | ({
+        relationTo: 'plugin-ai-instructions';
+        value: number | PluginAiInstruction;
       } | null)
     | ({
         relationTo: 'payload-folders';
@@ -1428,6 +1619,74 @@ export interface ComparisonsSelect<T extends boolean = true> {
   winner?: T;
   verdictSummary?: T;
   detailedBreakdown?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-networks_select".
+ */
+export interface AffiliateNetworksSelect<T extends boolean = true> {
+  name?: T;
+  networkType?: T;
+  status?: T;
+  linkStrategy?: T;
+  publisherId?: T;
+  apiToken?: T;
+  linkTemplate?: T;
+  lastSyncAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-feeds_select".
+ */
+export interface AffiliateFeedsSelect<T extends boolean = true> {
+  feedName?: T;
+  network?: T;
+  status?: T;
+  lastSync?: T;
+  addedCount?: T;
+  updatedCount?: T;
+  skippedCount?: T;
+  failedCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-coupons_select".
+ */
+export interface AffiliateCouponsSelect<T extends boolean = true> {
+  title?: T;
+  storeName?: T;
+  network?: T;
+  category?: T;
+  code?: T;
+  discountText?: T;
+  destinationUrl?: T;
+  affiliateUrl?: T;
+  clicks?: T;
+  commissions?: T;
+  epc?: T;
+  grossCommission?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "affiliate-clicks_select".
+ */
+export interface AffiliateClicksSelect<T extends boolean = true> {
+  clickId?: T;
+  network?: T;
+  merchant?: T;
+  clickref?: T;
+  destinationUrl?: T;
+  referrer?: T;
+  converted?: T;
+  commission?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1757,6 +2016,71 @@ export interface SearchSelect<T extends boolean = true> {
         categoryID?: T;
         title?: T;
         id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugin-ai-instructions_select".
+ */
+export interface PluginAiInstructionsSelect<T extends boolean = true> {
+  'schema-path'?: T;
+  'field-type'?: T;
+  'relation-to'?: T;
+  'model-id'?: T;
+  disabled?: T;
+  prompt?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  system?: T;
+  layout?: T;
+  'Oai-text-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'dalle-e-settings'?:
+    | T
+    | {
+        version?: T;
+        size?: T;
+        style?: T;
+        'enable-prompt-optimization'?: T;
+      };
+  'gpt-image-1-settings'?:
+    | T
+    | {
+        version?: T;
+        size?: T;
+        quality?: T;
+        output_format?: T;
+        output_compression?: T;
+        background?: T;
+        moderation?: T;
+      };
+  'Oai-tts-settings'?:
+    | T
+    | {
+        voice?: T;
+        model?: T;
+        response_format?: T;
+        speed?: T;
+      };
+  'Oai-object-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
       };
   updatedAt?: T;
   createdAt?: T;
