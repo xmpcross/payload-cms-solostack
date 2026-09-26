@@ -83,5 +83,21 @@ export const AffiliateCoupons: CollectionConfig = {
       type: 'number',
       defaultValue: 0.0,
     },
+    {
+      name: 'isActive',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Active Deal / Valid Offer',
+    },
+    {
+      name: 'expiryDate',
+      type: 'date',
+      label: 'Offer Expiration Date',
+    },
+    {
+      name: 'terms',
+      type: 'textarea',
+      label: 'Terms & Conditions / Minimum Spend',
+    },
   ],
 }
