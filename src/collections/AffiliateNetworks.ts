@@ -5,7 +5,10 @@ export const AffiliateNetworks: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: 'Affiliate Suite',
-    defaultColumns: ['name', 'networkType', 'status', 'linkStrategy', 'updatedAt'],
+    defaultColumns: ['name', 'networkType', 'status', 'linkStrategy', 'publisherId', 'updatedAt'],
+    components: {
+      beforeListTable: ['@/components/admin/AffiliateNetworksHeader#AffiliateNetworksHeader'],
+    },
   },
   access: {
     read: () => true,
