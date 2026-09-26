@@ -8,6 +8,11 @@ export interface AffiliateManagerProps {
 
 export default function AffiliateManager({ initialTab = 'settings' }: AffiliateManagerProps) {
   const [activeTab, setActiveTab] = useState<'settings' | 'import-sources' | 'analytics'>(initialTab)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // CJ Form State
   const [cjCid, setCjCid] = useState('8033258')
