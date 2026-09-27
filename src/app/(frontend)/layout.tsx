@@ -30,6 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+        <meta name="mitgo-verification" content="28d34b81-9840-44ac-adb1-9ae7ef0ae384" />
       </head>
       <body>
         <Providers>
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
           <Footer />
         </Providers>
+        <script src="https://convertlink.com/script/ce8f3235-a4ab-4b5b-bde4-b86890fd281b/bundle.js"></script>
       </body>
     </html>
   )
