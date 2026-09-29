@@ -13,7 +13,6 @@ async function seedBlueprint() {
     { title: 'Creator Media Lab', slug: 'creator-media-lab' },
     { title: 'Solopreneur Operations', slug: 'solopreneur-operations' },
     { title: 'AI & Automation', slug: 'ai-automation' },
-    { title: 'The Remote Desk', slug: 'remote-desk' },
     { title: 'Stack Blueprints', slug: 'stacks' },
   ]
 

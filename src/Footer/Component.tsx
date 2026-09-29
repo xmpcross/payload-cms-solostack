@@ -9,7 +9,6 @@ import { Logo } from '@/components/Logo/Logo'
 
 // Categories that have their own section instead of the filtered posts list.
 const TOPIC_HREF_OVERRIDES: Record<string, string> = {
-  'remote-desk': '/hardware',
   stacks: '/stacks',
 }
 
@@ -88,8 +87,8 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/hardware" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Hardware Reviews
+                <Link href="/best-gear" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
+                  Best Gear for Creators
                 </Link>
               </li>
               <li>

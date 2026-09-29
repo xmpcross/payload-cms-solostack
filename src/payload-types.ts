@@ -420,6 +420,10 @@ export interface Category {
   generateSlug?: boolean | null;
   slug: string;
   /**
+   * Number of posts (published and draft) in this category.
+   */
+  postCount?: number | null;
+  /**
    * Comma-separated. Imported coupons/products are assigned to this category when the advertiser sector or name matches one of these words. Leave empty to use the built-in defaults.
    */
   affiliateKeywords?: string | null;
@@ -1917,6 +1921,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   generateSlug?: T;
   slug?: T;
+  postCount?: T;
   affiliateKeywords?: T;
   parent?: T;
   breadcrumbs?:

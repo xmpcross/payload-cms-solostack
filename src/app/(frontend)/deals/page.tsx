@@ -6,6 +6,9 @@ import { DealsClient, DealItem } from '@/components/marketing/DealsClient'
 import { Tag, ShieldCheck, Flame, Percent, CheckCircle2 } from 'lucide-react'
 import { FAQSection } from '@/components/FAQSection'
 
+// Most deals loaded onto the page (the highest-clicked first). Raise or lower as needed.
+const MAX_DEALS = 300
+
 export const revalidate = 300 // Revalidate cache every 5 minutes
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +43,7 @@ export default async function DealsPage() {
         ],
       },
       sort: '-clicks',
-      limit: 500,
+      limit: MAX_DEALS,
     })
 
     deals = (result.docs || []).map((doc: any) => ({
@@ -115,7 +118,7 @@ export default async function DealsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="container max-w-5xl mx-auto px-4 sm:px-6 space-y-10">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 space-y-10">
         {/* CouponPilot Style Header */}
         <div className="space-y-4 pt-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-semibold border border-blue-500/20">

@@ -7,7 +7,6 @@ import {
   Sparkles,
   Layers,
   Cpu,
-  Laptop,
   Video,
   Briefcase,
   Search,
@@ -80,11 +79,13 @@ interface HomePageClientProps {
   hardware: HardwareData[]
 }
 
+// Most posts shown in the Latest Articles & Guides section (newest first).
+const MAX_HOME_POSTS = 6
+
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'creator-media-lab': <Video className="w-5 h-5 text-indigo-600" />,
   'solopreneur-operations': <Briefcase className="w-5 h-5 text-emerald-600" />,
   'ai-automation': <Cpu className="w-5 h-5 text-purple-600" />,
-  'remote-desk': <Laptop className="w-5 h-5 text-amber-600" />,
   'stacks': <Layers className="w-5 h-5 text-sky-600" />,
 }
 
@@ -92,7 +93,6 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   'creator-media-lab': 'from-indigo-50/90 via-purple-50/40 to-white border-indigo-200/80',
   'solopreneur-operations': 'from-emerald-50/90 via-teal-50/40 to-white border-emerald-200/80',
   'ai-automation': 'from-purple-50/90 via-pink-50/40 to-white border-purple-200/80',
-  'remote-desk': 'from-amber-50/90 via-orange-50/40 to-white border-amber-200/80',
   'stacks': 'from-sky-50/90 via-blue-50/40 to-white border-sky-200/80',
 }
 
@@ -118,7 +118,7 @@ export function HomePageClient({ categories, posts, stacks, tools, hardware }: H
         post.meta?.description?.toLowerCase().includes(searchQuery.toLowerCase())
 
       return matchesCategory && matchesSearch
-    })
+    }).slice(0, MAX_HOME_POSTS)
   }, [posts, selectedCategory, searchQuery])
 
   // Get image URL helper
@@ -198,12 +198,6 @@ export function HomePageClient({ categories, posts, stacks, tools, hardware }: H
                     className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 text-slate-700 font-medium transition-colors"
                   >
                     ⚡ Make.com Pipelines
-                  </button>
-                  <button
-                    onClick={() => { setSelectedCategory('remote-desk'); setSearchQuery('') }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 text-slate-700 font-medium transition-colors"
-                  >
-                    🪑 Ergonomic Desks
                   </button>
                 </div>
               </div>

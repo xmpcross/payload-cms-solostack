@@ -16,9 +16,9 @@ import { buildOfferFilter } from './affiliateFilters'
  * matching the filter are treated like offers removed from the feed and deactivated.
  */
 
-export type ImportNetwork = 'awin' | 'cj' | 'takeads'
+export type ImportNetwork = 'awin' | 'cj' | 'takeads' | 'impact'
 
-export const IMPORT_NETWORKS: ImportNetwork[] = ['awin', 'cj', 'takeads']
+export const IMPORT_NETWORKS: ImportNetwork[] = ['awin', 'cj', 'takeads', 'impact']
 
 export type NetworkImportResult = {
   network: ImportNetwork
@@ -403,6 +403,88 @@ async function* fetchTakeads(publicKey: string, regions: string[]) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Impact: GET /Mediapartners/{sid}/Campaigns + /Ads                   */
+/* ------------------------------------------------------------------ */
+
+const IMPACT_DELAY_MS = 600
+
+// Impact's ShippingRegions use country names; map the ISO codes used in feed settings.
+const IMPACT_REGION_NAMES: Record<string, string> = {
+  US: 'US', GB: 'UK', CA: 'CANADA', AU: 'AUSTRALIA', NZ: 'NEWZEALAND', IE: 'IRELAND', DE: 'GERMANY', FR: 'FRANCE',
+  ES: 'SPAIN', IT: 'ITALY', NL: 'NETHERLANDS', SE: 'SWEDEN', SG: 'SINGAPORE', IN: 'INDIA', JP: 'JAPAN', MX: 'MEXICO',
+}
+
+function impactDiscountText(ad: any): string | null {
+  if (ad.DiscountPercent) return `${ad.DiscountPercent}% OFF`
+  if (ad.DiscountAmount) return `${ad.DiscountCurrency === 'USD' || !ad.DiscountCurrency ? '$' : `${ad.DiscountCurrency} `}${ad.DiscountAmount} OFF`
+  return extractDiscountText(`${ad.DealName || ''} ${ad.Name || ''} ${ad.DealDescription || ''}`)
+}
+
+async function* fetchImpact(accountSid: string, authToken: string, regions: string[]) {
+  const base = `https://api.impact.com/Mediapartners/${accountSid}`
+  const headers = {
+    Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+    Accept: 'application/json',
+  }
+  const get = async (path: string) => {
+    const res = await fetch(base + path, { headers })
+    if (!res.ok) throw new Error(`Impact API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
+    return res.json()
+  }
+
+  // Programs you're accepted into, with the countries they ship to.
+  const shipsTo = new Map<string, string[]>()
+  for (let page = 1; ; page++) {
+    const json = await get(`/Campaigns?PageSize=100&Page=${page}`)
+    for (const c of json?.Campaigns || []) {
+      shipsTo.set(String(c.CampaignId), (c.ShippingRegions || []).map((r: string) => String(r).toUpperCase()).filter(Boolean))
+    }
+    if (!json?.['@nextpageuri']) break
+    await sleep(IMPACT_DELAY_MS)
+  }
+  const wanted = regions.map((r) => IMPACT_REGION_NAMES[r] || r)
+
+  // Ads carry the tracking link; only active deals and coupon ads are offers.
+  for (let page = 1; ; page++) {
+    const json = await get(`/Ads?PageSize=100&Page=${page}`)
+    const items: any[] = json?.Ads || []
+    const coupons: NormalizedCoupon[] = []
+    for (const ad of items) {
+      const isDeal = ad.DealId && ad.DealState === 'ACTIVE'
+      if (!isDeal && ad.Type !== 'COUPON') continue
+      if (!ad.TrackingLink) continue
+      if (regions.length) {
+        const ships = shipsTo.get(String(ad.CampaignId)) || []
+        if (!ships.some((r) => wanted.includes(r))) continue
+        if (ad.Language && !String(ad.Language).toUpperCase().startsWith('EN')) continue
+      }
+      const title = String(ad.DealName || ad.Name || '').trim()
+      if (!title) continue
+      const code = String(ad.DealDefaultPromoCode || '').trim() || null
+      coupons.push({
+        // Several ads can point at the same deal; key by deal so it's imported once.
+        externalId: ad.DealId ? `impact:deal:${ad.DealId}` : `impact:ad:${ad.Id}`,
+        title: truncate(title, 250)!,
+        storeName: String(ad.AdvertiserName || ad.CampaignName || 'Unknown'),
+        advertiserId: String(ad.AdvertiserId || ''),
+        advertiserJoined: true, // the Partner API only returns programs you've been accepted into
+        code,
+        discountText: impactDiscountText(ad),
+        destinationUrl: ad.LandingPageUrl || ad.TrackingLink,
+        affiliateUrl: ad.TrackingLink,
+        terms: truncate(ad.DealDescription || ad.Description, 2000),
+        startDate: parseDate(ad.DealStartDate || ad.StartDate),
+        expiryDate: parseDate(ad.DealEndDate || ad.EndDate),
+        sector: '', // Impact has no sector field; matching uses the advertiser name
+      })
+    }
+    yield { coupons, raw: items.length }
+    if (!json?.['@nextpageuri'] || !items.length) return
+    await sleep(IMPACT_DELAY_MS)
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Upsert + expiry                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -480,7 +562,7 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
     feed = await payload.create({
       collection: 'affiliate-feeds',
       data: {
-        feedName: `${{ cj: 'CJ Affiliate', awin: 'Awin Network', takeads: 'Takeads' }[network]} — Coupons & Promo Codes Feed`,
+        feedName: `${{ cj: 'CJ Affiliate', awin: 'Awin Network', takeads: 'Takeads', impact: 'Impact' }[network]} — Coupons & Promo Codes Feed`,
         network,
         feedType: 'coupons',
         advertiserScope: 'all_advertisers',
@@ -507,6 +589,9 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
     if (network === 'awin') {
       if (!creds?.publisherId || !creds?.apiToken) throw new Error('Awin Publisher ID and API token are required.')
       source = fetchAwin(creds.publisherId, creds.apiToken, approvedOnly ? 'joined' : 'all', regions)
+    } else if (network === 'impact') {
+      if (!creds?.publisherId || !creds?.apiToken) throw new Error('Impact Account SID and Auth Token are required.')
+      source = fetchImpact(creds.publisherId, creds.apiToken, regions)
     } else if (network === 'takeads') {
       if (!creds?.publishKey) throw new Error('Takeads Publish Key is required (it is the API public key).')
       source = fetchTakeads(creds.publishKey, regions)

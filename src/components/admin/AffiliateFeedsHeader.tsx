@@ -46,23 +46,25 @@ function formatSync(iso?: string | null) {
 }
 
 // Networks with a coupon importer (see IMPORT_NETWORKS in utilities/couponImporter.ts).
-const SYNCABLE_COUPON_NETWORKS = ['awin', 'cj', 'takeads']
+const SYNCABLE_COUPON_NETWORKS = ['awin', 'cj', 'takeads', 'impact']
 
 function FeedRow({
   kind,
   feeds,
   onSync,
   syncing,
+  total,
 }: {
   kind: (typeof FEED_KINDS)[number]
   feeds: Feed[]
   onSync?: () => void
   syncing?: boolean
+  /** Items from this network currently live (active coupons); undefined while loading. */
+  total?: number
 }) {
   const added = feeds.reduce((n, f) => n + (f.addedCount || 0), 0)
   const updated = feeds.reduce((n, f) => n + (f.updatedCount || 0), 0)
   const failed = feeds.reduce((n, f) => n + (f.failedCount || 0), 0)
-  const skipped = feeds.reduce((n, f) => n + (f.skippedCount || 0), 0)
   const lastSync = feeds.map((f) => f.lastSync).filter(Boolean).sort().pop()
   const status = feeds.some((f) => f.status === 'ERROR')
     ? 'ERROR'
@@ -123,7 +125,7 @@ function FeedRow({
             {[
               ['Added', added, '#161513'],
               ['Updated', updated, '#161513'],
-              ['Skipped', skipped, '#6E6B64'],
+              ['Total', total ?? 0, '#187742'],
               ['Failed', failed, failed ? '#B42318' : '#161513'],
             ].map(([label, value, color]) => (
               <div key={label as string}>
@@ -150,6 +152,8 @@ function FeedRow({
 
 export function AffiliateFeedsHeader() {
   const [feeds, setFeeds] = useState<Feed[]>([])
+  // Active imported coupons per network (what's live on /deals). No products are imported yet.
+  const [couponTotals, setCouponTotals] = useState<Record<string, number>>({})
   const [loadingFeeds, setLoadingFeeds] = useState(true)
   const [syncingAll, setSyncingAll] = useState(false)
   const [syncingNetwork, setSyncingNetwork] = useState<string | null>(null)
@@ -160,7 +164,25 @@ export function AffiliateFeedsHeader() {
     try {
       const res = await fetch('/api/affiliate-feeds?limit=500&depth=0&sort=feedName', { credentials: 'include' })
       const data = await res.json()
-      setFeeds(Array.isArray(data?.docs) ? data.docs : [])
+      const docs: Feed[] = Array.isArray(data?.docs) ? data.docs : []
+      setFeeds(docs)
+      const networks = [...new Set(docs.map((f) => f.network))]
+      const counts = await Promise.all(
+        networks.map(async (network) => {
+          const params = new URLSearchParams({
+            'where[network][equals]': network,
+            'where[isActive][equals]': 'true',
+            'where[externalId][exists]': 'true',
+            limit: '1',
+            depth: '0',
+            'select[id]': 'true',
+          })
+          const res = await fetch(`/api/affiliate-coupons?${params}`, { credentials: 'include' })
+          const json = await res.json().catch(() => null)
+          return [network, Number(json?.totalDocs) || 0] as const
+        }),
+      )
+      setCouponTotals(Object.fromEntries(counts))
     } catch {
       setFeeds([])
     } finally {
@@ -289,7 +311,7 @@ export function AffiliateFeedsHeader() {
           <div className="affiliate-kpi-label">Coupon Feeds</div>
           <div className="affiliate-kpi-value">{loadingFeeds ? '…' : couponFeeds.length}</div>
           <div className="affiliate-kpi-delta">
-            {couponFeeds.reduce((n, f) => n + (f.addedCount || 0), 0).toLocaleString()} coupons & promo codes
+            {Object.values(couponTotals).reduce((n, c) => n + c, 0).toLocaleString()} live coupons & promo codes
           </div>
         </div>
 
@@ -297,7 +319,7 @@ export function AffiliateFeedsHeader() {
           <div className="affiliate-kpi-label">Product Feeds</div>
           <div className="affiliate-kpi-value">{loadingFeeds ? '…' : productFeeds.length}</div>
           <div className="affiliate-kpi-delta">
-            {productFeeds.reduce((n, f) => n + (f.addedCount || 0), 0).toLocaleString()} catalog products
+            0 products imported (no product importer yet)
           </div>
         </div>
 
@@ -345,6 +367,7 @@ export function AffiliateFeedsHeader() {
                         : undefined
                     }
                     syncing={syncingNetwork === provider.value}
+                    total={kind.type === 'coupons' ? couponTotals[provider.value] : 0}
                   />
                 ))}
               </div>

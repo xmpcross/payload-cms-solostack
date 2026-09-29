@@ -85,11 +85,11 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
               <span>Tools</span>
             </Link>
             <Link
-              href="/hardware"
+              href="/best-gear"
               className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 text-xs font-bold text-slate-900 dark:text-slate-100"
             >
               <Cpu className="w-4 h-4 text-amber-600" />
-              <span>Hardware</span>
+              <span>Best Gear</span>
             </Link>
             <Link
               href="/comparisons"

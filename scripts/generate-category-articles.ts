@@ -283,7 +283,7 @@ const articlesData = [
     ],
   },
   {
-    categorySlug: 'remote-desk',
+    categorySlug: 'solopreneur-operations',
     title: 'Ergonomic & Minimalist Remote Workstation Setup: The Ultimate 2026 Desk Guide',
     slug: 'ergonomic-minimalist-remote-workstation-setup',
     heroPrompt: 'Clean minimalist dark wood standing desk with ergonomic office chair, curved monitor, magnetic cable management, warm ambient backlight',
@@ -348,6 +348,149 @@ const articlesData = [
       ]),
     ],
   },
+  {
+    categorySlug: 'marketing-growth',
+    title: "The Solo Founder's Email Marketing Engine: Build a List That Sells on Autopilot",
+    slug: 'solo-founder-email-marketing-engine',
+    heroPrompt: 'Minimalist workspace with laptop showing an abstract rising line chart and envelope icons, soft natural light, clean modern desk, muted teal accents, no text, no letters, no words, no writing on screen',
+    imageFilename: 'solo-founder-email-marketing-engine',
+    metaTitle: "The Solo Founder's Email Marketing Engine (2026 Guide)",
+    metaDescription: 'Build an email list that sells while you work: lead magnets, a 5-email welcome sequence, simple segmentation and the deliverability basics every solo founder needs.',
+    content: [
+      banner('info', 'Why Email Still Wins', 'Social platforms decide who sees your posts. Your email list is the one marketing channel you own outright, and for a one-person business it is usually the highest-leverage asset you can build.'),
+      h('h2', 'Start With One Irresistible Lead Magnet'),
+      p([
+        t('Nobody wakes up wanting to "join a newsletter". They want a specific problem solved. A good lead magnet is narrow, fast to consume and directly connected to what you eventually sell.'),
+      ]),
+      ul([
+        [t('Checklists and templates: ', 1), t('A client onboarding checklist, a pricing calculator or a proposal template can be used the same day.')],
+        [t('Short email courses: ', 1), t('Five days, one lesson per day. They also warm readers up for your offer.')],
+        [t('Resource libraries: ', 1), t('Your curated toolkit or swipe file, updated over time so it stays worth subscribing for.')],
+      ]),
+      p([
+        t('Put the signup form where intent is highest: at the end of your best articles, on a dedicated landing page, and in your social profiles. One well-placed form beats five pop-ups.'),
+      ]),
+      h('h2', 'Write a Welcome Sequence Once, Let It Work Forever'),
+      p([
+        t('The first week after someone subscribes is when they pay the most attention. An automated welcome sequence turns that attention into trust, and trust into sales, without you writing a new email every day.'),
+      ]),
+      ul([
+        [t('Email 1, Deliver: ', 1), t('Send the lead magnet immediately and say what to expect from you.')],
+        [t('Email 2, Story: ', 1), t('Why you do this work and who you help. People buy from people.')],
+        [t('Email 3, Quick win: ', 1), t('Teach one tactic they can apply in ten minutes.')],
+        [t('Email 4, Proof: ', 1), t('A client result or case study, with the specifics that make it believable.')],
+        [t('Email 5, Offer: ', 1), t('A clear invitation to your product, service or consultation, with one call to action.')],
+      ]),
+      h('h2', 'Segment Simply, Then Personalise'),
+      p([
+        t('You do not need complex automation on day one. Two or three tags are enough: what the subscriber signed up for, whether they clicked your offer, and whether they have bought. Buyers should stop receiving the pitch they have already accepted; engaged non-buyers deserve a follow-up.'),
+      ]),
+      h('h2', 'Protect Your Deliverability'),
+      banner('warning', 'Inbox, Not Spam', 'Most sending problems come from missing domain authentication. Set this up before your first broadcast, not after open rates collapse.'),
+      ul([
+        [t('Authenticate your domain: ', 1), t('Add the SPF, DKIM and DMARC records your email platform provides, and send from your own domain rather than a free mailbox.')],
+        [t('Use confirmed opt-in for cold traffic: ', 1), t('It keeps fake and mistyped addresses off your list.')],
+        [t('Prune inactive subscribers: ', 1), t('Re-engage or remove people who have not opened in several months. A smaller engaged list delivers better than a large dead one.')],
+      ]),
+      h('h2', 'Choosing an Email Platform'),
+      p([
+        t('For solo creators, creator-focused platforms such as Kit (formerly ConvertKit), MailerLite and beehiiv cover landing pages, automations and tagging without enterprise complexity. Pick the one whose editor you enjoy using: consistency matters more than features. Check our '),
+        link('/deals', 'current deals and coupons', 1),
+        t(' before you commit to an annual plan, and use '),
+        link('/tools/make-com', 'Make.com', 1),
+        t(' to connect signups from payments, forms or your CRM.'),
+      ]),
+    ],
+  },
+  {
+    categorySlug: 'marketing-growth',
+    title: 'SEO for One-Person Businesses: A Lean Content Strategy That Compounds',
+    slug: 'seo-for-one-person-businesses',
+    heroPrompt: 'Top-down view of a notebook with a hand-drawn diagram of connected circles and lines, no text, no letters, no handwriting, next to a laptop showing abstract rising charts, warm desk lamp, calm focused atmosphere',
+    imageFilename: 'seo-for-one-person-businesses',
+    metaTitle: 'SEO for One-Person Businesses: A Lean Strategy (2026)',
+    metaDescription: 'A practical SEO plan for solo founders: pick winnable keywords, build topic clusters, nail on-page basics and measure progress in Google Search Console.',
+    content: [
+      banner('success', 'The Compounding Channel', 'Paid ads stop the moment you stop paying. A useful article that ranks can bring in qualified visitors for years, which makes SEO one of the few marketing channels that scales without scaling your hours.'),
+      h('h2', 'Pick Keywords You Can Actually Win'),
+      p([
+        t('Solo businesses rarely beat large publishers on broad terms. The opportunity is in specific, lower-competition searches that signal real intent, often longer phrases describing an exact situation.'),
+      ]),
+      ul([
+        [t('Start from customer questions: ', 1), t('Sales calls, support emails and community threads are full of the exact phrases people search.')],
+        [t('Match search intent: ', 1), t('Look at what already ranks. If the results are step-by-step guides, a sales page will not compete.')],
+        [t('Favour buying-adjacent topics: ', 1), t('Comparisons, "how to choose" guides and setup tutorials attract readers close to a decision.')],
+      ]),
+      h('h2', 'Build Topic Clusters, Not Isolated Posts'),
+      p([
+        t('Search engines reward sites that cover a subject in depth. Organise content into clusters: one comprehensive pillar page on a core topic, supported by focused articles that each answer a narrower question and link back to the pillar.'),
+      ]),
+      p([
+        t('For example, a pillar on client onboarding can be supported by articles on proposal templates, contract basics and kickoff call agendas. Every internal link strengthens the whole cluster and helps readers find the next step.'),
+      ]),
+      h('h2', 'On-Page Basics That Still Matter'),
+      ul([
+        [t('One clear topic per page: ', 1), t('Use the main phrase naturally in the title, first paragraph and at least one subheading.')],
+        [t('Write for skimmers: ', 1), t('Descriptive subheadings, short paragraphs and lists help readers and search engines alike.')],
+        [t('Titles and descriptions that earn clicks: ', 1), t('Your meta title and description are your ad in the search results. Make them specific.')],
+        [t('Fast, mobile-friendly pages: ', 1), t('Compress images and keep layouts light. Slow pages lose visitors before they read a word.')],
+      ]),
+      h('h2', 'Measure What Matters'),
+      p([
+        t('Google Search Console is free and shows which queries you appear for, your average position and click-through rate. Review it monthly: pages ranking just off the first page are your quickest wins, often improved by expanding the content and adding internal links.'),
+      ]),
+      banner('info', 'Give It Time', 'New content typically takes months to settle into stable rankings. Publish consistently, update your best performers, and judge the strategy over quarters rather than weeks.'),
+      h('h2', 'Tools for a Lean SEO Workflow'),
+      p([
+        t('Keyword research suites such as Semrush and Ahrefs speed up research and competitor analysis, but Search Console plus a clear list of customer questions will take a new site a long way. See our '),
+        link('/deals', 'latest marketing tool deals', 1),
+        t(' before upgrading, and use '),
+        link('/tools/canva-pro', 'Canva Pro', 1),
+        t(' for original diagrams and featured images that make your articles more linkable.'),
+      ]),
+    ],
+  },
+  {
+    categorySlug: 'marketing-growth',
+    title: 'The Content Repurposing Flywheel: Turn One Long-Form Asset into a Week of Posts',
+    slug: 'content-repurposing-flywheel',
+    heroPrompt: 'Creator desk with podcast microphone, laptop showing video timeline split into short vertical clips, phone displaying social media posts, vibrant but tasteful studio lighting',
+    imageFilename: 'content-repurposing-flywheel',
+    metaTitle: 'The Content Repurposing Flywheel for Solo Creators (2026)',
+    metaDescription: 'Create once, publish everywhere: a repeatable system for turning one video, podcast or article into clips, posts, a newsletter and SEO content.',
+    content: [
+      banner('info', 'Create Once, Distribute Everywhere', 'Solo creators do not lose to bigger teams on ideas. They lose on distribution. A repurposing system lets one strong piece of content fill every channel you care about.'),
+      h('h2', 'Start With a Pillar Piece'),
+      p([
+        t('Each week, produce one substantial asset: a video, podcast episode, live session or in-depth article. Everything else is cut from it. This keeps your message consistent and means you only research and record once.'),
+      ]),
+      h('h2', 'The Repurposing Map'),
+      ul([
+        [t('Short video clips: ', 1), t('Pull three to five moments with a strong hook and reframe them vertically for Shorts, Reels and TikTok.')],
+        [t('Text posts and threads: ', 1), t('Turn the key argument into a LinkedIn post or thread, and single insights into standalone posts.')],
+        [t('Newsletter: ', 1), t('Summarise the lesson, add a personal angle and link to the full piece.')],
+        [t('Blog article: ', 1), t('Edit the transcript into a structured, search-friendly article that keeps working long after the social posts fade.')],
+        [t('Quote graphics and carousels: ', 1), t('Visual summaries for Instagram and LinkedIn.')],
+      ]),
+      h('h2', 'A Weekly Workflow You Can Sustain'),
+      p([
+        t('Batching is what makes this manageable. Record on one day, repurpose on the next, and schedule everything in a single session so the week publishes itself.'),
+      ]),
+      ul([
+        [t('Record: ', 1), t('Capture high-quality local audio and video with '), link('/tools/riverside-fm', 'Riverside.fm', 1), t(' so every clip starts from a clean source.')],
+        [t('Edit and clip: ', 1), t('Edit by transcript in '), link('/tools/descript', 'Descript', 1), t(', remove filler words and export short clips with captions.')],
+        [t('Design: ', 1), t('Build reusable templates for thumbnails, quote cards and carousels in '), link('/tools/canva-pro', 'Canva Pro', 1), t('.')],
+        [t('Schedule: ', 1), t('Queue posts in a scheduler such as Buffer or Later, and automate hand-offs between tools with '), link('/tools/make-com', 'Make.com', 1), t('.')],
+      ]),
+      h('h2', 'Adapt, Do Not Copy-Paste'),
+      banner('warning', 'Native Beats Identical', 'Each platform has its own format and tone. Rewrite the hook, adjust the length and add platform-appropriate captions instead of posting the same text everywhere.'),
+      p([
+        t('Track which clips and posts drive profile visits, email signups or sales, not just views. Feed those lessons back into next week\'s pillar topic and the flywheel gets faster with every cycle. Browse our '),
+        link('/deals', 'creator and marketing tool deals', 1),
+        t(' to assemble the stack for less.'),
+      ]),
+    ],
+  },
 ]
 
 async function main() {
@@ -369,7 +512,16 @@ async function main() {
   })
   const authorId = usersRes.docs[0]?.id
 
-  for (const articleDef of articlesData) {
+  // Optional --category=<slug> limits generation to one category's articles.
+  const onlyCategory = process.argv.find((a) => a.startsWith('--category='))?.split('=')[1]
+  // Optional --slug=<a,b> limits it further to specific articles (e.g. to regenerate an image).
+  const onlySlugs = process.argv.find((a) => a.startsWith('--slug='))?.split('=')[1]?.split(',')
+  const selected = articlesData.filter(
+    (a) => (!onlyCategory || a.categorySlug === onlyCategory) && (!onlySlugs || onlySlugs.includes(a.slug)),
+  )
+  console.log(`Generating ${selected.length} article(s)${onlyCategory ? ` for "${onlyCategory}"` : ''}.`)
+
+  for (const articleDef of selected) {
     console.log(`\n==================================================`)
     console.log(`Processing article for category slug: "${articleDef.categorySlug}"`)
 

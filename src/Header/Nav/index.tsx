@@ -11,7 +11,7 @@ import { Search, Tag, Layers, Wrench, Cpu, BookOpen, Scale } from 'lucide-react'
 const DEFAULT_TOP_NAV_LINKS = [
   { label: 'Stacks', url: '/stacks', icon: <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400" /> },
   { label: 'Tools', url: '/tools', icon: <Wrench className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> },
-  { label: 'Hardware', url: '/hardware', icon: <Cpu className="w-4 h-4 text-amber-600 dark:text-amber-400" /> },
+  { label: 'Best Gear', url: '/best-gear', icon: <Cpu className="w-4 h-4 text-amber-600 dark:text-amber-400" /> },
   { label: 'Comparisons', url: '/comparisons', icon: <Scale className="w-4 h-4 text-purple-600 dark:text-purple-400" /> },
   { label: 'Articles', url: '/posts', icon: <BookOpen className="w-4 h-4 text-slate-600 dark:text-slate-400" /> },
 ]

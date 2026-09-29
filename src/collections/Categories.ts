@@ -14,6 +14,7 @@ export const Categories: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'title',
+    defaultColumns: ['title', 'postCount', 'slug'],
   },
   fields: [
     {
@@ -24,6 +25,31 @@ export const Categories: CollectionConfig = {
     slugField({
       position: undefined,
     }),
+    {
+      // Not stored: counted from Posts each time the category is read.
+      name: 'postCount',
+      label: 'Posts',
+      type: 'number',
+      virtual: true,
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'Number of posts (published and draft) in this category.',
+      },
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            if (!data?.id) return 0
+            const { totalDocs } = await req.payload.count({
+              collection: 'posts',
+              where: { categories: { in: [data.id] } },
+              req,
+            })
+            return totalDocs
+          },
+        ],
+      },
+    },
     {
       name: 'affiliateKeywords',
       type: 'textarea',

@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { action, network } = body
 
-    // Real coupon import (Awin, CJ, Takeads). Runs in the background; progress is visible on the feed records.
+    // Real coupon import (Awin, CJ, Takeads, Impact). Runs in the background; progress is visible on the feed records.
     if (action === 'import_coupons' || action === 'sync_all_advertisers' || action === 'sync') {
       const payload = await getPayload({ config: configPromise })
       const { user } = await payload.auth({ headers: request.headers })
@@ -230,7 +230,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Coupon import started for Awin, CJ and Takeads in the background — refresh in a few minutes to see results.`,
+        message: `Coupon import started for Awin, CJ, Takeads and Impact in the background — refresh in a few minutes to see results.`,
       })
     }
 

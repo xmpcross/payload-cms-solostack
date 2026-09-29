@@ -1,7 +1,7 @@
 /**
  * Scheduled coupon import + expiry sweep.
  *   NODE_ENV=production npx tsx scripts/import-coupons.ts                # import all networks, then sweep
- *   NODE_ENV=production npx tsx scripts/import-coupons.ts --network=cj   # one network (awin | cj | takeads)
+ *   NODE_ENV=production npx tsx scripts/import-coupons.ts --network=cj   # one network (awin | cj | takeads | impact)
  *   NODE_ENV=production npx tsx scripts/import-coupons.ts --sweep        # only deactivate/purge expired
  * NODE_ENV=production stops Payload from running a dev schema push.
  */

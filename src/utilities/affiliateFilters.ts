@@ -48,13 +48,6 @@ const DEFAULT_TERMS: Record<string, { sectors: string[]; brands: string[] }> = {
       'udemy', 'coursera', 'masterclass', 'domestika', 'teachable', 'kajabi', 'thinkific', 'podia',
     ],
   },
-  'The Remote Desk': {
-    sectors: ['computers', 'electronic accessories', 'gadgets', 'office supplies', 'computer hw', 'peripherals', 'office'],
-    brands: [
-      'herman miller', 'steelcase', 'autonomous.ai', 'uplift desk', 'secretlab', 'logitech', 'dell', 'lenovo', 'hp',
-      'anker', 'keychron', 'benq', 'laptop outlet',
-    ],
-  },
   'Solopreneur Operations': {
     sectors: [
       'business services (b2b)', 'software downloads', 'computer sw', 'business-to-business', 'productivity tools',
@@ -73,7 +66,6 @@ const RULE_ORDER = [
   'Websites & Hosting',
   'Marketing & Growth',
   'Creator Media Lab',
-  'The Remote Desk',
   'Solopreneur Operations',
 ]
 

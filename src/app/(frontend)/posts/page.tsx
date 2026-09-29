@@ -1,33 +1,37 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/CollectionArchive'
-import { PageRange } from '@/components/PageRange'
-import { Pagination } from '@/components/Pagination'
+import { PostsArchive } from '@/components/PostsArchive'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import React from 'react'
+import React, { Suspense } from 'react'
 import PageClient from './page.client'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
 
+// Most posts loaded into the filterable archive.
+const MAX_POSTS = 200
+
 export default async function Page() {
-  let posts: any = { docs: [], page: 1, totalDocs: 0, totalPages: 1 }
+  let posts: any[] = []
   try {
     const payload = await getPayload({ config: configPromise })
 
-    posts = await payload.find({
+    const result = await payload.find({
       collection: 'posts',
       depth: 1,
-      limit: 12,
+      limit: MAX_POSTS,
       overrideAccess: false,
+      sort: '-publishedAt',
       select: {
         title: true,
         slug: true,
         categories: true,
         meta: true,
+        publishedAt: true,
       },
     })
+    posts = result.docs
   } catch (error) {
     console.warn('Database query error for posts index:', error)
   }
@@ -35,28 +39,15 @@ export default async function Page() {
   return (
     <div className="pt-24 pb-24">
       <PageClient />
-      <div className="container mb-16">
+      <div className="container mb-10">
         <div className="prose dark:prose-invert max-w-none">
           <h1>Posts</h1>
         </div>
       </div>
 
-      <div className="container mb-8">
-        <PageRange
-          collection="posts"
-          currentPage={posts.page}
-          limit={12}
-          totalDocs={posts.totalDocs}
-        />
-      </div>
-
-      <CollectionArchive posts={posts.docs} />
-
-      <div className="container">
-        {posts.totalPages > 1 && posts.page && (
-          <Pagination page={posts.page} totalPages={posts.totalPages} />
-        )}
-      </div>
+      <Suspense fallback={null}>
+        <PostsArchive posts={posts} />
+      </Suspense>
     </div>
   )
 }
