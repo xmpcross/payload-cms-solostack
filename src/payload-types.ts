@@ -419,6 +419,10 @@ export interface Category {
    */
   generateSlug?: boolean | null;
   slug: string;
+  /**
+   * Comma-separated. Imported coupons/products are assigned to this category when the advertiser sector or name matches one of these words. Leave empty to use the built-in defaults.
+   */
+  affiliateKeywords?: string | null;
   parent?: (number | null) | Category;
   breadcrumbs?:
     | {
@@ -927,10 +931,26 @@ export interface Comparison {
 export interface AffiliateNetwork {
   id: number;
   name: string;
-  networkType: 'cj' | 'awin' | 'custom';
+  networkType: 'cj' | 'awin' | 'takeads' | 'custom';
   status?: ('active' | 'inactive' | 'error') | null;
   linkStrategy: 'append_subid' | 'template';
   publisherId?: string | null;
+  /**
+   * Required by the CJ Link Search API to import coupons. Found under Account → Websites in CJ.
+   */
+  websiteId?: string | null;
+  /**
+   * Used for generating Takeads cookieless affiliate redirect links.
+   */
+  platformId?: string | null;
+  /**
+   * Publish Key used alongside Platform ID for link generation.
+   */
+  publishKey?: string | null;
+  /**
+   * Account-level public API key used to pull stats, clicks, and earnings.
+   */
+  accountApiKey?: string | null;
   /**
    * Stored securely and used for GraphQL & REST API endpoints.
    */
@@ -950,13 +970,42 @@ export interface AffiliateNetwork {
 export interface AffiliateFeed {
   id: number;
   feedName: string;
-  network: 'cj' | 'awin' | 'showcase';
+  network: 'all_advertisers' | 'cj' | 'awin' | 'takeads' | 'showcase' | 'impact' | 'rakuten' | 'direct';
+  /**
+   * Value-First Mode displays coupons, vouchers, and product feeds from all advertisers regardless of affiliate partnership stage.
+   */
+  advertiserScope?: ('all_advertisers' | 'approved_only') | null;
+  /**
+   * Each affiliate provider keeps its Coupons feed and Product Feed as separate records.
+   */
+  feedType: 'coupons' | 'products' | 'all_content';
   status?: ('ACTIVE' | 'PAUSED' | 'SYNCING' | 'ERROR') | null;
   lastSync?: string | null;
   addedCount?: number | null;
   updatedCount?: number | null;
   skippedCount?: number | null;
   failedCount?: number | null;
+  /**
+   * Matches each advertiser's network sector/category against the keywords on each Category. Non-matching advertisers are skipped.
+   */
+  siteCategoriesOnly?: boolean | null;
+  /**
+   * ISO country codes, comma separated (e.g. US or US, GB, CA). Only offers valid in these countries are imported. Leave empty for all countries.
+   */
+  regions?: string | null;
+  /**
+   * Advertiser IDs or exact names, comma or line separated. Imported even if no category matches.
+   */
+  includeAdvertisers?: string | null;
+  /**
+   * Advertiser IDs or exact names, comma or line separated.
+   */
+  excludeAdvertisers?: string | null;
+  /**
+   * Offers whose title, terms or advertiser name contain any of these words are skipped.
+   */
+  excludeKeywords?: string | null;
+  lastError?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -968,7 +1017,18 @@ export interface AffiliateCoupon {
   id: number;
   title: string;
   storeName: string;
-  network: 'cj' | 'awin' | 'direct';
+  /**
+   * Set automatically when a coupon is first imported, based on the advertiser sector. Changes you make here are kept on later imports.
+   */
+  siteCategory?: (number | null) | Category;
+  /**
+   * Ticked automatically when you change Site Category by hand. Untick to let imports re-categorise it.
+   */
+  siteCategoryLocked?: boolean | null;
+  network: 'cj' | 'awin' | 'takeads' | 'direct';
+  /**
+   * Old fixed list, kept for existing coupons. Use Site Category instead.
+   */
   category?:
     | (
         | 'Fashion & Apparel'
@@ -989,6 +1049,14 @@ export interface AffiliateCoupon {
   isActive?: boolean | null;
   expiryDate?: string | null;
   terms?: string | null;
+  /**
+   * Network offer ID (e.g. awin:12345). Imported coupons only.
+   */
+  externalId?: string | null;
+  advertiserId?: string | null;
+  advertiserJoined?: boolean | null;
+  startDate?: string | null;
+  lastSeenAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1667,6 +1735,10 @@ export interface AffiliateNetworksSelect<T extends boolean = true> {
   status?: T;
   linkStrategy?: T;
   publisherId?: T;
+  websiteId?: T;
+  platformId?: T;
+  publishKey?: T;
+  accountApiKey?: T;
   apiToken?: T;
   linkTemplate?: T;
   lastSyncAt?: T;
@@ -1680,12 +1752,20 @@ export interface AffiliateNetworksSelect<T extends boolean = true> {
 export interface AffiliateFeedsSelect<T extends boolean = true> {
   feedName?: T;
   network?: T;
+  advertiserScope?: T;
+  feedType?: T;
   status?: T;
   lastSync?: T;
   addedCount?: T;
   updatedCount?: T;
   skippedCount?: T;
   failedCount?: T;
+  siteCategoriesOnly?: T;
+  regions?: T;
+  includeAdvertisers?: T;
+  excludeAdvertisers?: T;
+  excludeKeywords?: T;
+  lastError?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1696,6 +1776,8 @@ export interface AffiliateFeedsSelect<T extends boolean = true> {
 export interface AffiliateCouponsSelect<T extends boolean = true> {
   title?: T;
   storeName?: T;
+  siteCategory?: T;
+  siteCategoryLocked?: T;
   network?: T;
   category?: T;
   code?: T;
@@ -1709,6 +1791,11 @@ export interface AffiliateCouponsSelect<T extends boolean = true> {
   isActive?: T;
   expiryDate?: T;
   terms?: T;
+  externalId?: T;
+  advertiserId?: T;
+  advertiserJoined?: T;
+  startDate?: T;
+  lastSeenAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1830,6 +1917,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   generateSlug?: T;
   slug?: T;
+  affiliateKeywords?: T;
   parent?: T;
   breadcrumbs?:
     | T

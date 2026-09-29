@@ -5,25 +5,42 @@ interface Props {
   className?: string
   loading?: 'lazy' | 'eager'
   priority?: 'auto' | 'high' | 'low'
+  mode?: 'light' | 'dark' | 'auto'
 }
 
-export const Logo = (props: Props) => {
-  const { loading: loadingFromProps, priority: priorityFromProps, className } = props
+export const Logo: React.FC<Props> = (props) => {
+  const { className, mode = 'auto' } = props
 
-  const loading = loadingFromProps || 'lazy'
-  const priority = priorityFromProps || 'low'
+  if (mode === 'light') {
+    return (
+      <div className={clsx('inline-flex items-center', className)}>
+        <img src="/solostack-logo-light.svg" alt="SoloStack" className="h-8 sm:h-9 w-auto" />
+      </div>
+    )
+  }
+
+  if (mode === 'dark') {
+    return (
+      <div className={clsx('inline-flex items-center', className)}>
+        <img src="/solostack-logo-dark.svg" alt="SoloStack" className="h-8 sm:h-9 w-auto" />
+      </div>
+    )
+  }
 
   return (
-    /* eslint-disable @next/next/no-img-element */
-    <img
-      alt="Payload Logo"
-      width={193}
-      height={34}
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      className={clsx('max-w-[9.375rem] w-full h-[34px]', className)}
-      src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-logo-light.svg"
-    />
+    <div className={clsx('inline-flex items-center', className)}>
+      {/* Light Mode SVG Logo */}
+      <img
+        src="/solostack-logo-light.svg"
+        alt="SoloStack"
+        className="dark:hidden h-8 sm:h-9 w-auto"
+      />
+      {/* Dark Mode SVG Logo */}
+      <img
+        src="/solostack-logo-dark.svg"
+        alt="SoloStack"
+        className="hidden dark:block h-8 sm:h-9 w-auto"
+      />
+    </div>
   )
 }

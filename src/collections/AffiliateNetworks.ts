@@ -26,6 +26,7 @@ export const AffiliateNetworks: CollectionConfig = {
       options: [
         { label: 'CJ Affiliate (Commission Junction)', value: 'cj' },
         { label: 'Awin Network', value: 'awin' },
+        { label: 'Takeads Affiliate Network (Mitgo)', value: 'takeads' },
         { label: 'Custom Deep Link', value: 'custom' },
       ],
     },
@@ -53,6 +54,38 @@ export const AffiliateNetworks: CollectionConfig = {
       name: 'publisherId',
       type: 'text',
       label: 'Publisher ID / Requestor CID',
+    },
+    {
+      name: 'websiteId',
+      type: 'text',
+      label: 'CJ Website ID (PID)',
+      admin: {
+        description: 'Required by the CJ Link Search API to import coupons. Found under Account → Websites in CJ.',
+      },
+    },
+    {
+      name: 'platformId',
+      type: 'text',
+      label: 'Takeads Platform ID',
+      admin: {
+        description: 'Used for generating Takeads cookieless affiliate redirect links.',
+      },
+    },
+    {
+      name: 'publishKey',
+      type: 'text',
+      label: 'Takeads Publish Key',
+      admin: {
+        description: 'Publish Key used alongside Platform ID for link generation.',
+      },
+    },
+    {
+      name: 'accountApiKey',
+      type: 'text',
+      label: 'Account-Level Public Key API (Stats)',
+      admin: {
+        description: 'Account-level public API key used to pull stats, clicks, and earnings.',
+      },
     },
     {
       name: 'apiToken',

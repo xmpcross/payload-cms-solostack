@@ -23,14 +23,6 @@ interface DealsClientProps {
   initialDeals: DealItem[]
 }
 
-const CATEGORIES = [
-  'All Stores',
-  'Software & Web Hosting',
-  'Travel & Booking',
-  'Beauty & Personal Care',
-  'Electronics & Tech',
-  'Fashion & Apparel',
-]
 
 export function DealsClient({ initialDeals }: DealsClientProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Stores')
@@ -52,6 +44,12 @@ export function DealsClient({ initialDeals }: DealsClientProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Category chips come from the site categories present in the deals, busiest first.
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const d of initialDeals) if (d.category) counts.set(d.category, (counts.get(d.category) || 0) + 1)
+    return ['All Stores', ...[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)]
+  }, [initialDeals])
   const codeCount = useMemo(() => initialDeals.filter((d) => Boolean(d.code)).length, [initialDeals])
   const dealCount = useMemo(() => initialDeals.filter((d) => !d.code).length, [initialDeals])
 
@@ -126,6 +124,7 @@ export function DealsClient({ initialDeals }: DealsClientProps) {
               <option value="all">All Verified Networks</option>
               <option value="cj">CJ Affiliate</option>
               <option value="awin">Awin Network</option>
+              <option value="takeads">Takeads Network</option>
             </select>
           </div>
         </div>
@@ -172,7 +171,7 @@ export function DealsClient({ initialDeals }: DealsClientProps) {
 
         {/* Category Filter Chips Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isSelected = selectedCategory === cat
             return (
               <button

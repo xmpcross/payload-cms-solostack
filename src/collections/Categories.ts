@@ -24,5 +24,14 @@ export const Categories: CollectionConfig = {
     slugField({
       position: undefined,
     }),
+    {
+      name: 'affiliateKeywords',
+      type: 'textarea',
+      label: 'Affiliate Sector Keywords',
+      admin: {
+        description:
+          'Comma-separated. Imported coupons/products are assigned to this category when the advertiser sector or name matches one of these words. Leave empty to use the built-in defaults.',
+      },
+    },
   ],
 }

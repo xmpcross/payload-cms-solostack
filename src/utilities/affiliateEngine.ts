@@ -54,6 +54,24 @@ export function generateCJDeepLink({
 }
 
 /**
+ * Generate deep link for Takeads (Mitgo) using Platform ID and Publish Key
+ */
+export function generateTakeadsDeepLink({
+  platformId = 'tk_plt_98471',
+  publishKey = 'pub_key_8841920',
+  destinationUrl = 'https://www.hostinger.com',
+  clickref = 'clk_demo_902_10',
+}: {
+  platformId?: string
+  publishKey?: string
+  destinationUrl?: string
+  clickref?: string
+}): string {
+  const encodedDest = encodeURIComponent(destinationUrl)
+  return `https://tacdn.com/g/click?platform_id=${platformId}&pub_key=${publishKey}&url=${encodedDest}&subid=${clickref}`
+}
+
+/**
  * Diagnostic test helpers
  */
 export function runLinkDiagnosis() {
@@ -76,6 +94,17 @@ export function runLinkDiagnosis() {
       output: generateCJDeepLink({
         publisherId: '8033258',
         adId: '7016661',
+        clickref: 'clk_demo_902_10',
+      }),
+    },
+    takeads: {
+      strategy: 'subid_redirect',
+      label: 'Platform ID & Publish Key Redirection',
+      explanation: 'Takeads routes merchant links using Platform ID (platform_id) & Publish Key (pub_key) appending &subid=clk_demo_902_10.',
+      output: generateTakeadsDeepLink({
+        platformId: 'tk_plt_98471',
+        publishKey: 'pub_key_8841920',
+        destinationUrl: 'https://www.hostinger.com',
         clickref: 'clk_demo_902_10',
       }),
     },

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 42" width="240" height="42" fill="none">
+  <defs>
+    <!-- Gradient for Top Layer & Accent -->
+    <linearGradient id="ss-grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="ss-text-grad-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ICON MARK: Creative Minimal Layered Stack -->
+  <g transform="translate(4, 3)">
+    <!-- Base Layer 3 (Bottom Card) -->
+    <rect x="2" y="24" width="22" height="10" rx="3.5" fill="#334155" transform="rotate(-6 13 29)"/>
+    <!-- Middle Layer 2 -->
+    <rect x="5" y="14" width="23" height="11" rx="3.5" fill="#6366F1" fill-opacity="0.6" transform="rotate(-3 16.5 19.5)"/>
+    <!-- Top Layer 1 (Main Floating Card with Gradient) -->
+    <rect x="8" y="4" width="24" height="12" rx="4" fill="url(#ss-grad-dark)" />
+    <!-- Inner Sparkle Accent Dot -->
+    <circle cx="27" cy="7" r="2.5" fill="#34D399"/>
+    <circle cx="27" cy="7" r="1.2" fill="#FFFFFF"/>
+  </g>
+
+  <!-- LOGO TEXT: SOLOSTACK.AU -->
+  <g transform="translate(44, 28)">
+    <!-- "SOLO" in Pure White -->
+    <text font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="900" font-size="21" letter-spacing="-0.5" fill="#FFFFFF">SOLO</text>
+    <!-- "STACK" in Vibrant Gradient -->
+    <text x="61" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800" font-size="21" letter-spacing="-0.5" fill="url(#ss-text-grad-dark)">STACK</text>
+    <!-- ".AU" Pill Chip -->
+    <rect x="135" y="-14" width="26" height="14" rx="4" fill="#064E3B" stroke="#059669" stroke-width="1"/>
+    <text x="148" y="-4" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="9" fill="#6EE7B7" text-anchor="middle">.AU</text>
+  </g>
+</svg>

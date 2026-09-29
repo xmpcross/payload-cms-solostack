@@ -34,12 +34,13 @@ export default async function DealsPage() {
     const result = await payload.find({
       collection: 'affiliate-coupons',
       where: {
-        isActive: {
-          equals: true,
-        },
+        and: [
+          { isActive: { not_equals: false } },
+          { or: [{ expiryDate: { exists: false } }, { expiryDate: { greater_than: new Date().toISOString() } }] },
+        ],
       },
       sort: '-clicks',
-      limit: 100,
+      limit: 500,
     })
 
     deals = (result.docs || []).map((doc: any) => ({
@@ -47,7 +48,8 @@ export default async function DealsPage() {
       title: doc.title,
       storeName: doc.storeName,
       network: doc.network,
-      category: doc.category || 'Software & Web Hosting',
+      category:
+        (typeof doc.siteCategory === 'object' && doc.siteCategory?.title) || doc.category || 'Software & Web Hosting',
       code: doc.code || undefined,
       discountText: doc.discountText || undefined,
       destinationUrl: doc.destinationUrl,

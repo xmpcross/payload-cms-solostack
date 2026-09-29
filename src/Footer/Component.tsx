@@ -1,12 +1,43 @@
 import { getCachedGlobal } from '@/utilities/getGlobals'
+import configPromise from '@payload-config'
 import Link from 'next/link'
+import { getPayload } from 'payload'
 import React from 'react'
 
 import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { Logo } from '@/components/Logo/Logo'
 
+// Categories that have their own section instead of the filtered posts list.
+const TOPIC_HREF_OVERRIDES: Record<string, string> = {
+  'remote-desk': '/hardware',
+  stacks: '/stacks',
+}
+
+async function getTopics(): Promise<{ title: string; href: string }[]> {
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const { docs } = await payload.find({
+      collection: 'categories',
+      sort: 'createdAt',
+      limit: 20,
+      depth: 0,
+      select: { title: true, slug: true },
+    })
+    return docs
+      .filter((cat) => cat.title && cat.slug)
+      .map((cat) => ({
+        title: cat.title,
+        href: TOPIC_HREF_OVERRIDES[cat.slug as string] || `/posts?category=${cat.slug}`,
+      }))
+  } catch (error) {
+    console.warn('Footer categories fetch error:', error)
+    return []
+  }
+}
+
 export async function Footer() {
   const footerData = await getCachedGlobal('footer', 1)()
+  const topics = await getTopics()
 
   return (
     <footer className="mt-auto border-t border-border bg-neutral-50 dark:bg-card text-neutral-900 dark:text-white transition-colors">
@@ -15,11 +46,8 @@ export async function Footer() {
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-8 justify-between">
           {/* Column 1: 55% Width */}
           <div className="w-full lg:w-[55%] lg:pr-10">
-            <Link className="inline-flex items-center gap-3 mb-4 group" href="/">
-              <span className="font-extrabold text-2xl tracking-tight text-neutral-900 dark:text-white flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-[0_0_12px_rgba(16,185,129,0.7)]"></span>
-                SOLOSTACK<span className="text-emerald-500">.AU</span>
-              </span>
+            <Link className="inline-flex items-center mb-4 group" href="/">
+              <Logo />
             </Link>
             <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed max-w-xl mb-5">
               SoloStack curates production-tested software, ergonomic hardware workstations, and automated zero-headcount blueprints for solopreneurs, indie hackers, and creators scaling 1-person businesses.
@@ -33,10 +61,10 @@ export async function Footer() {
             </div>
           </div>
 
-          {/* Column 2: 15% Width - About */}
+          {/* Column 2: 15% Width - About & Resources */}
           <div className="w-full sm:w-1/3 lg:w-[15%]">
             <h4 className="text-sm font-semibold tracking-wider uppercase text-neutral-900 dark:text-neutral-200 mb-4">
-              About
+              About &amp; Resources
             </h4>
             <ul className="space-y-2.5 text-sm text-neutral-600 dark:text-neutral-400">
               <li>
@@ -45,63 +73,10 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Contact Us
-                </Link>
-              </li>
-              <li>
                 <Link href="/faqs" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
                   FAQs
                 </Link>
               </li>
-              <li>
-                <Link href="/faqs" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Editorial Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: 15% Width - Topics */}
-          <div className="w-full sm:w-1/3 lg:w-[15%]">
-            <h4 className="text-sm font-semibold tracking-wider uppercase text-neutral-900 dark:text-neutral-200 mb-4">
-              Topics
-            </h4>
-            <ul className="space-y-2.5 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>
-                <Link href="/posts" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Creator Media Lab
-                </Link>
-              </li>
-              <li>
-                <Link href="/posts" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Solo Operations
-                </Link>
-              </li>
-              <li>
-                <Link href="/posts" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  AI &amp; Automation
-                </Link>
-              </li>
-              <li>
-                <Link href="/hardware" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  The Remote Desk
-                </Link>
-              </li>
-              <li>
-                <Link href="/stacks" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
-                  Stack Blueprints
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: 15% Width - Useful Links */}
-          <div className="w-full sm:w-1/3 lg:w-[15%]">
-            <h4 className="text-sm font-semibold tracking-wider uppercase text-neutral-900 dark:text-neutral-200 mb-4">
-              Useful Links
-            </h4>
-            <ul className="space-y-2.5 text-sm text-neutral-600 dark:text-neutral-400">
               <li>
                 <Link href="/deals" className="hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors font-medium text-emerald-600 dark:text-emerald-400">
                   Deals &amp; Coupons
@@ -118,6 +93,36 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/contact" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: 15% Width - Topics */}
+          <div className="w-full sm:w-1/3 lg:w-[15%]">
+            <h4 className="text-sm font-semibold tracking-wider uppercase text-neutral-900 dark:text-neutral-200 mb-4">
+              Topics
+            </h4>
+            <ul className="space-y-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+              {topics.map((topic) => (
+                <li key={topic.href}>
+                  <Link href={topic.href} className="hover:text-emerald-600 dark:hover:text-white transition-colors">
+                    {topic.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: 15% Width - Useful Links */}
+          <div className="w-full sm:w-1/3 lg:w-[15%]">
+            <h4 className="text-sm font-semibold tracking-wider uppercase text-neutral-900 dark:text-neutral-200 mb-4">
+              Useful Links
+            </h4>
+            <ul className="space-y-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+              <li>
                 <Link href="/affiliate-disclosure" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
                   Affiliate Disclosure
                 </Link>
@@ -128,8 +133,18 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/cookie-policy" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
                 <Link href="/terms" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
                   Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/faqs" className="hover:text-emerald-600 dark:hover:text-white transition-colors">
+                  Editorial Policy
                 </Link>
               </li>
             </ul>
