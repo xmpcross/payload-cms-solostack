@@ -16,7 +16,9 @@ import { buildOfferFilter } from './affiliateFilters'
  * matching the filter are treated like offers removed from the feed and deactivated.
  */
 
-export type ImportNetwork = 'awin' | 'cj'
+export type ImportNetwork = 'awin' | 'cj' | 'takeads'
+
+export const IMPORT_NETWORKS: ImportNetwork[] = ['awin', 'cj', 'takeads']
 
 export type NetworkImportResult = {
   network: ImportNetwork
@@ -74,8 +76,57 @@ const AWIN_PAGE_SIZE = 200 // API allows 10–200
 const AWIN_DELAY_MS = 3200 // Awin publisher API: 20 requests/minute
 const CJ_PAGE_SIZE = 100 // Link Search max records-per-page
 const CJ_DELAY_MS = 2600 // CJ REST APIs: 25 requests/minute
+const TAKEADS_PAGE_SIZE = 100
+const TAKEADS_DELAY_MS = 1200
 const CJ_PROMOTION_TYPES = ['coupon', 'sale/discount', 'free shipping']
 const STALE_LOCK_MS = 3 * 60 * 60 * 1000
+const MAX_PER_ADVERTISER = 25 // per sync, so one brand can't flood the deals page
+
+// Country names / codes that mark an advertiser account as serving another market ("Dell Technologies France").
+const COUNTRY_MARKERS: Record<string, string[]> = {
+  US: ['usa', 'united states', 'us'],
+  GB: ['uk', 'united kingdom', 'great britain', 'gb'],
+  CA: ['canada', 'ca'],
+  AU: ['australia', 'au'],
+  NZ: ['new zealand', 'nz'],
+  IE: ['ireland', 'ie'],
+  DE: ['germany', 'deutschland', 'de'],
+  FR: ['france', 'fr'],
+  ES: ['spain', 'españa', 'espana', 'es'],
+  IT: ['italy', 'italia', 'it'],
+  NL: ['netherlands', 'nederland', 'nl'],
+  BE: ['belgium', 'be'],
+  AT: ['austria', 'österreich', 'at'],
+  CH: ['switzerland', 'schweiz', 'ch'],
+  SE: ['sweden', 'sverige', 'se'],
+  DK: ['denmark', 'dk'],
+  NO: ['norway', 'no'],
+  FI: ['finland', 'fi'],
+  PL: ['poland', 'polska', 'pl'],
+  CZ: ['czech', 'czechia', 'cz'],
+  PT: ['portugal', 'pt'],
+  BR: ['brazil', 'brasil', 'br'],
+  MX: ['mexico', 'méxico', 'mx'],
+  IN: ['india', 'in'],
+  JP: ['japan', 'jp'],
+  SG: ['singapore', 'sg'],
+  EU: ['eu', 'europe', 'emea', 'nordic', 'nordics', 'latam', 'apac', 'asia'],
+}
+
+/** True when the advertiser name names a market outside `regions` (2-letter codes only match in capitals). */
+function namesForeignMarket(name: string, regions: string[]): boolean {
+  for (const [code, words] of Object.entries(COUNTRY_MARKERS)) {
+    if (regions.includes(code)) continue
+    for (const w of words) {
+      const re =
+        w.length <= 2
+          ? new RegExp(`(^|[^A-Za-z])${w.toUpperCase()}(?=$|[^A-Za-z])`)
+          : new RegExp(`(^|[^a-z])${w}(?=$|[^a-z])`, 'i')
+      if (re.test(name)) return true
+    }
+  }
+  return false
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -106,18 +157,23 @@ function truncate(value: string | null | undefined, max: number): string | null 
 /* Awin: POST /publisher/{id}/promotions                               */
 /* ------------------------------------------------------------------ */
 
-/** Advertiser ID → primarySector, from GET /publishers/{id}/programmes. */
+/** Advertiser ID → primary sector & home country, from GET /publishers/{id}/programmes. */
 async function fetchAwinSectors(publisherId: string, token: string, membership: 'all' | 'joined') {
-  const sectors = new Map<string, string>()
+  const sectors = new Map<string, { sector: string; country: string }>()
   const relationships = membership === 'all' ? ['joined', 'notjoined'] : ['joined']
   for (const relationship of relationships) {
     const res = await fetch(`https://api.awin.com/publishers/${publisherId}/programmes?relationship=${relationship}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) throw new Error(`Awin programmes API ${res.status}: ${(await res.text()).slice(0, 300)}`)
+    if (!res.ok) throw new Error(`Awin programmes API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
     const list = await res.json()
     for (const p of Array.isArray(list) ? list : []) {
-      if (p?.id != null) sectors.set(String(p.id), String(p.primarySector || ''))
+      if (p?.id != null) {
+        sectors.set(String(p.id), {
+          sector: String(p.primarySector || ''),
+          country: String(p.primaryRegion?.countryCode || '').toUpperCase(),
+        })
+      }
     }
     await sleep(AWIN_DELAY_MS)
   }
@@ -136,7 +192,7 @@ async function* fetchAwin(publisherId: string, token: string, membership: 'all' 
       }),
     })
     if (!res.ok) {
-      throw new Error(`Awin API ${res.status}: ${(await res.text()).slice(0, 300)}`)
+      throw new Error(`Awin API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
     }
     const json = await res.json()
     const items: any[] = Array.isArray(json?.data) ? json.data : []
@@ -144,6 +200,14 @@ async function* fetchAwin(publisherId: string, token: string, membership: 'all' 
     const coupons: NormalizedCoupon[] = []
     for (const o of items) {
       if (!o?.promotionId || !o?.advertiser) continue
+      const advertiser = sectors.get(String(o.advertiser.id))
+      if (regions.length) {
+        // Awin's regionCodes filter also returns "all regions" offers from foreign advertisers, so require
+        // the advertiser to be based in a target country and the offer to be valid there.
+        const offerCountries: string[] = (o.regions?.list || []).map((r: any) => String(r?.countryCode || '').toUpperCase())
+        const validThere = o.regions?.all || offerCountries.some((c) => regions.includes(c))
+        if (!advertiser || !regions.includes(advertiser.country) || !validThere) continue
+      }
       const title = String(o.title || o.description || '').trim()
       const url = o.url || o.urlTracking
       if (!title || !url) continue
@@ -160,7 +224,7 @@ async function* fetchAwin(publisherId: string, token: string, membership: 'all' 
         terms: truncate(o.terms, 2000),
         startDate: parseDate(o.startDate),
         expiryDate: parseDate(o.endDate),
-        sector: sectors.get(String(o.advertiser.id)) || '',
+        sector: advertiser?.sector || '',
       })
     }
     yield { coupons, raw: items.length }
@@ -208,13 +272,12 @@ async function* fetchCj(
           'records-per-page': String(CJ_PAGE_SIZE),
           'page-number': String(page),
         })
-        if (regions.length) params.set('serviceable-area', regions.join(','))
         const res = await fetch(`https://link-search.api.cj.com/v2/link-search?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         const body = await res.text()
         if (!res.ok || body.includes('<error-message>')) {
-          throw new Error(`CJ API ${res.status}: ${(xmlTag(body, 'error-message') || body).slice(0, 300)}`)
+          throw new Error(`CJ API ${res.status}: ${(xmlTag(body, 'error-message') || body).slice(0, 1000)}`)
         }
 
         const blocks = body.match(/<link>[\s\S]*?<\/link>/g) || []
@@ -225,6 +288,19 @@ async function* fetchCj(
           const clickUrl = xmlTag(b, 'clickUrl')
           const title = xmlTag(b, 'link-name') || xmlTag(b, 'description')
           if (!linkId || !title || !(destination || clickUrl)) continue
+          if (regions.length) {
+            // Link Search has no country filter. Use the link's targeted-countries when set; otherwise
+            // require English and an advertiser name that doesn't point at another market.
+            const targeted = xmlTag(b, 'targeted-countries')
+            const countries = targeted && targeted !== 'null' ? targeted.split(/[,\s]+/).map((c) => c.toUpperCase()) : []
+            if (countries.length) {
+              if (!countries.some((c) => regions.includes(c))) continue
+            } else {
+              const language = xmlTag(b, 'language').toLowerCase()
+              if (language && !language.startsWith('en')) continue
+              if (namesForeignMarket(xmlTag(b, 'advertiser-name'), regions)) continue
+            }
+          }
           const description = xmlTag(b, 'description')
           coupons.push({
             externalId: `cj:${linkId}`,
@@ -250,6 +326,79 @@ async function* fetchCj(
         if (done) break
       }
     }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Takeads: GET /v1/product/monetize-api/v1/coupon (+ v2/merchant)      */
+/* ------------------------------------------------------------------ */
+
+const TAKEADS_API = 'https://api.takeads.com/v1/product/monetize-api'
+
+/** Merchant ID → name & domain. Coupons only carry merchantId. */
+async function fetchTakeadsMerchants(publicKey: string) {
+  const merchants = new Map<number, { name: string; domain: string }>()
+  let next = ''
+  for (;;) {
+    const res = await fetch(`${TAKEADS_API}/v2/merchant?limit=${TAKEADS_PAGE_SIZE}${next ? `&next=${next}` : ''}`, {
+      headers: { Authorization: `Bearer ${publicKey}` },
+    })
+    if (!res.ok) throw new Error(`Takeads merchant API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
+    const json = await res.json()
+    const items: any[] = Array.isArray(json?.data) ? json.data : []
+    for (const m of items) {
+      if (m?.merchantId != null) merchants.set(m.merchantId, { name: String(m.name || ''), domain: String(m.defaultDomain || '') })
+    }
+    next = json?.meta?.next
+    if (!next || !items.length) return merchants
+    await sleep(TAKEADS_DELAY_MS)
+  }
+}
+
+async function* fetchTakeads(publicKey: string, regions: string[]) {
+  const merchants = await fetchTakeadsMerchants(publicKey)
+  let next = ''
+  for (;;) {
+    const params = new URLSearchParams({ limit: String(TAKEADS_PAGE_SIZE) })
+    if (regions.length) params.set('countryCodes', regions.join(','))
+    if (next) params.set('next', next)
+    const res = await fetch(`${TAKEADS_API}/v1/coupon?${params}`, { headers: { Authorization: `Bearer ${publicKey}` } })
+    if (!res.ok) throw new Error(`Takeads coupon API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
+    const json = await res.json()
+    const items: any[] = Array.isArray(json?.data) ? json.data : []
+
+    const coupons: NormalizedCoupon[] = []
+    for (const c of items) {
+      // The feed keeps old offers; only active ones in a target country, in English.
+      if (!c?.couponId || !c.isActive || !c.trackingLink) continue
+      const countries: string[] = (c.countryCodes || []).map((x: string) => String(x).toUpperCase())
+      if (regions.length && !countries.some((x) => regions.includes(x))) continue
+      const langs: string[] = (c.languageCodes || []).map((x: string) => String(x).toLowerCase())
+      if (regions.length && langs.length && !langs.includes('en')) continue
+      const merchant = merchants.get(c.merchantId)
+      if (!merchant?.name || !c.name) continue
+      coupons.push({
+        externalId: `takeads:${c.couponId}`,
+        title: truncate(String(c.name), 250)!,
+        storeName: merchant.name,
+        advertiserId: String(c.merchantId),
+        advertiserJoined: true, // Takeads monetises any merchant in its catalogue
+        code: typeof c.code === 'string' && c.code.trim() ? c.code.trim() : null,
+        discountText: extractDiscountText(`${c.name} ${c.description || ''}`),
+        destinationUrl: merchant.domain && merchant.domain !== 'unknown.host' ? `https://${merchant.domain}` : c.trackingLink,
+        affiliateUrl: c.trackingLink,
+        terms: truncate(c.description, 2000),
+        startDate: parseDate(c.startDate),
+        expiryDate: parseDate(c.endDate),
+        // No category names in the Takeads API; the merchant domain helps brand matching.
+        sector: merchant.domain,
+      })
+    }
+    yield { coupons, raw: items.length }
+
+    next = json?.meta?.next
+    if (!next || !items.length) return
+    await sleep(TAKEADS_DELAY_MS)
   }
 }
 
@@ -331,7 +480,7 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
     feed = await payload.create({
       collection: 'affiliate-feeds',
       data: {
-        feedName: `${network === 'cj' ? 'CJ Affiliate' : 'Awin Network'} — Coupons & Promo Codes Feed`,
+        feedName: `${{ cj: 'CJ Affiliate', awin: 'Awin Network', takeads: 'Takeads' }[network]} — Coupons & Promo Codes Feed`,
         network,
         feedType: 'coupons',
         advertiserScope: 'all_advertisers',
@@ -358,6 +507,9 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
     if (network === 'awin') {
       if (!creds?.publisherId || !creds?.apiToken) throw new Error('Awin Publisher ID and API token are required.')
       source = fetchAwin(creds.publisherId, creds.apiToken, approvedOnly ? 'joined' : 'all', regions)
+    } else if (network === 'takeads') {
+      if (!creds?.publishKey) throw new Error('Takeads Publish Key is required (it is the API public key).')
+      source = fetchTakeads(creds.publishKey, regions)
     } else {
       if (!creds?.websiteId || !creds?.apiToken)
         throw new Error('CJ Website ID (PID) and Personal Access Token are required.')
@@ -367,6 +519,7 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
     const filter = await buildOfferFilter(payload, feed as any)
     const existing = await loadExisting(payload, network)
     const seenThisRun = new Set<string>()
+    const perAdvertiser = new Map<string, number>()
     const nowIso = runStart.toISOString()
 
     for await (const page of source) {
@@ -393,6 +546,12 @@ async function importNetwork(payload: Payload, network: ImportNetwork, runStart:
           result.skipped++
           continue
         }
+        const advertiserCount = perAdvertiser.get(c.advertiserId) || 0
+        if (advertiserCount >= MAX_PER_ADVERTISER) {
+          result.skipped++
+          continue
+        }
+        perAdvertiser.set(c.advertiserId, advertiserCount + 1)
         const { sector: _sector, ...fields } = c
         const data: CouponData = { ...fields, siteCategory: match.categoryId }
 
@@ -490,48 +649,49 @@ export async function sweepExpiredCoupons(payload: Payload) {
   return { expiredDeactivated: expired?.rowCount ?? 0, purged: purged?.rowCount ?? 0 }
 }
 
-let running: Promise<ImportResult> | null = null
+const running = new Map<ImportNetwork, Promise<NetworkImportResult>>()
 
-export function isCouponImportRunning() {
-  return running !== null
+/** With no argument: whether any network is importing in this process. */
+export function isCouponImportRunning(network?: ImportNetwork) {
+  return network ? running.has(network) : running.size > 0
 }
 
-/** Runs the import. Concurrent calls in the same process share one run; a run from another process is skipped. */
-export function importAllCoupons(
+/**
+ * Imports the given networks one after another, then runs the expiry sweep.
+ * Each network has its own lock, so e.g. CJ can sync while Awin is still running. A network already
+ * importing in this process is joined rather than restarted; one importing in another process
+ * (cron vs admin button) is skipped.
+ */
+export async function importAllCoupons(
   payload: Payload,
-  networks: ImportNetwork[] = ['awin', 'cj'],
+  networks: ImportNetwork[] = IMPORT_NETWORKS,
 ): Promise<ImportResult> {
-  if (running) return running
+  const runStart = new Date()
+  const results: NetworkImportResult[] = []
 
-  running = (async () => {
-    const runStart = new Date()
-
-    // Cross-process guard (e.g. cron + admin button): skip networks another process is still syncing.
-    const toRun: ImportNetwork[] = []
-    for (const network of networks) {
-      const feed = await getCouponFeed(payload, network)
-      const busy =
-        feed?.status === 'SYNCING' && Date.now() - new Date(feed.updatedAt).getTime() < STALE_LOCK_MS
-      if (!busy) toRun.push(network)
+  for (const network of networks) {
+    const inProcess = running.get(network)
+    if (inProcess) {
+      results.push(await inProcess)
+      continue
     }
+    const feed = await getCouponFeed(payload, network)
+    const busyElsewhere =
+      feed?.status === 'SYNCING' && Date.now() - new Date(feed.updatedAt).getTime() < STALE_LOCK_MS
+    if (busyElsewhere) continue
 
-    const results: NetworkImportResult[] = []
-    for (const network of toRun) {
-      results.push(await importNetwork(payload, network, runStart))
-    }
-    const sweep = await sweepExpiredCoupons(payload)
+    const run = importNetwork(payload, network, new Date()).finally(() => running.delete(network))
+    running.set(network, run)
+    results.push(await run)
+  }
 
-    const summary: ImportResult = {
-      startedAt: runStart.toISOString(),
-      finishedAt: new Date().toISOString(),
-      networks: results,
-      ...sweep,
-    }
-    payload.logger.info(`[couponImporter] ${JSON.stringify(summary)}`)
-    return summary
-  })().finally(() => {
-    running = null
-  })
-
-  return running
+  const sweep = await sweepExpiredCoupons(payload)
+  const summary: ImportResult = {
+    startedAt: runStart.toISOString(),
+    finishedAt: new Date().toISOString(),
+    networks: results,
+    ...sweep,
+  }
+  payload.logger.info(`[couponImporter] ${JSON.stringify(summary)}`)
+  return summary
 }

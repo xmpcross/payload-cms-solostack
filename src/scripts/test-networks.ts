@@ -1,8 +1,8 @@
 import 'dotenv/config'
 
 async function testNetworkAPIs() {
-  const cjToken = 'I6RdTp0hEscu0v_O6C_wLoMOcQ'
-  const cjPublisherId = '5724573'
+  const cjToken = process.env.CJ_API_TOKEN || ''
+  const cjPublisherId = process.env.CJ_PUBLISHER_ID || ''
 
   console.log('Testing CJ Affiliate GraphQL / REST API...')
   try {
@@ -23,8 +23,8 @@ async function testNetworkAPIs() {
     console.error('CJ Error:', err.message)
   }
 
-  const awinToken = '4fe4b17c-16d0-4a18-93f9-1ecdee4c70ed'
-  const awinPublisherId = '2918909'
+  const awinToken = process.env.AWIN_API_TOKEN || ''
+  const awinPublisherId = process.env.AWIN_PUBLISHER_ID || ''
 
   console.log('\nTesting Awin API programmes...')
   try {

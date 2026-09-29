@@ -2,48 +2,70 @@ import type { Payload } from 'payload'
 
 /**
  * Decides which advertisers' offers are imported and which site Category they land in.
- * Matching runs against the advertiser's network sector (Awin primarySector / CJ link category)
- * plus the advertiser name. Rules are checked in order; the first matching category wins.
+ *
+ * Each category has a list of terms (Category → Affiliate Sector Keywords, or the defaults below).
+ * A term matches when it either:
+ *  - equals the advertiser's network sector exactly (Awin primarySector / CJ link category), or
+ *  - appears as a whole word in the advertiser's name (brand names).
+ * Built-in defaults keep sector names and brand names separate so generic sector words
+ * ("marketing", "office") don't match company names.
+ * Categories are checked in RULE_ORDER; the first match wins.
  */
 
-// Used when a Category has no affiliateKeywords set. Order matters: specific before broad.
-const DEFAULT_KEYWORDS: Record<string, string[]> = {
-  'AI & Automation': [
-    'ai', 'artificial intelligence', 'automation', 'no-code', 'nocode', 'chatbot', 'workflow', 'machine learning',
-    // Networks have no "AI" sector, so well-known AI / automation brands are matched by advertiser name.
-    'jasper', 'copy.ai', 'writesonic', 'rytr', 'synthesia', 'heygen', 'pictory', 'descript', 'elevenlabs',
-    'murf', 'otter.ai', 'fireflies', 'grammarly', 'quillbot', 'surfer', 'frase', 'zapier', 'make.com', 'n8n',
-    'pabbly', 'clickup', 'notion', 'monday.com', 'airtable', 'tidio', 'manychat', 'midjourney', 'leonardo.ai',
-    'runway', 'invideo', 'fliki', 'speechify', 'tome', 'gamma', 'beautiful.ai',
-  ],
-  'Websites & Hosting': [
-    'hosting', 'web hosting', 'web hosting/servers', 'servers', 'domain', 'domains', 'domain registrations',
-    'website builder', 'site builder', 'wordpress', 'themes', 'plugins', 'ssl', 'cdn',
-    'hostinger', 'namecheap', 'bluehost', 'siteground', 'kinsta', 'wp engine', 'wpengine', 'cloudways', 'godaddy',
-    'ionos', 'dreamhost', 'a2 hosting', 'hostgator', 'porkbun', 'wix', 'squarespace', 'webflow', 'elementor',
-    'framer', 'carrd', 'themeforest', 'envato',
-  ],
-  'Marketing & Growth': [
-    'marketing', 'email marketing', 'online marketing', 'digital marketing', 'seo', 'advertising', 'social media',
-    'crm', 'lead generation', 'landing page', 'landing pages', 'newsletter', 'analytics',
-    'kit.com', 'convertkit', 'mailchimp', 'mailerlite', 'activecampaign', 'aweber', 'getresponse', 'brevo', 'klaviyo',
-    'beehiiv', 'semrush', 'ahrefs', 'se ranking', 'moz', 'buffer', 'hootsuite', 'later.com', 'leadpages', 'unbounce',
-    'hubspot', 'pipedrive', 'systeme.io', 'clickfunnels', 'kartra',
-  ],
-  'Creator Media Lab': [
-    'camera', 'cameras', 'photo', 'photography', 'video', 'audio', 'music', 'microphone', 'podcast',
-    'stock media', 'stock photos', 'design', 'creative', 'editing', 'streaming', 'courses', 'online courses',
-    'education', 'e-learning', 'learning',
-  ],
-  'The Remote Desk': [
-    'laptop', 'laptops', 'electronics', 'consumer electronics', 'office', 'office supplies',
-    'furniture', 'desk', 'chair', 'monitor', 'headphones', 'keyboard', 'gadgets', 'computer hw', 'hardware',
-  ],
-  'Solopreneur Operations': [
-    'software', 'computer sw', 'saas', 'ecommerce', 'e-commerce', 'accounting', 'invoicing', 'productivity',
-    'business', 'business-to-business', 'b2b', 'business services', 'vpn', 'security', 'antivirus', 'cloud',
-    'online services', 'technology', 'tech', 'internet', 'telecoms',
-  ],
+// Used when a Category has no affiliateKeywords set. Sectors are exact Awin / CJ sector names and only
+// match the sector field; brands only match the advertiser name.
+const DEFAULT_TERMS: Record<string, { sectors: string[]; brands: string[] }> = {
+  'AI & Automation': {
+    sectors: [],
+    brands: [
+      'jasper', 'copy.ai', 'writesonic', 'rytr', 'synthesia', 'heygen', 'pictory', 'descript', 'elevenlabs',
+      'murf', 'otter.ai', 'fireflies', 'grammarly', 'quillbot', 'surfer seo', 'frase', 'zapier', 'make.com', 'n8n',
+      'pabbly', 'clickup', 'notion', 'monday.com', 'airtable', 'tidio', 'manychat', 'midjourney', 'leonardo.ai',
+      'runwayml', 'invideo', 'fliki', 'speechify', 'gamma.app', 'beautiful.ai',
+    ],
+  },
+  'Websites & Hosting': {
+    sectors: ['web hosting', 'web hosting/servers', 'domain registrations', 'web design', 'web tools'],
+    brands: [
+      'hostinger', 'namecheap', 'bluehost', 'siteground', 'kinsta', 'wp engine', 'wpengine', 'cloudways', 'godaddy',
+      'ionos', 'dreamhost', 'a2 hosting', 'hostgator', 'porkbun', 'wix', 'squarespace', 'webflow', 'elementor',
+      'framer', 'carrd', 'themeforest', 'envato',
+    ],
+  },
+  'Marketing & Growth': {
+    sectors: ['email marketing', 'marketing', 'search engine'],
+    brands: [
+      'kit.com', 'convertkit', 'mailchimp', 'mailerlite', 'activecampaign', 'aweber', 'getresponse', 'brevo',
+      'klaviyo', 'beehiiv', 'semrush', 'ahrefs', 'se ranking', 'moz', 'buffer', 'hootsuite', 'later.com',
+      'leadpages', 'unbounce', 'hubspot', 'pipedrive', 'systeme.io', 'clickfunnels', 'kartra',
+    ],
+  },
+  'Creator Media Lab': {
+    sectors: ['photography', 'audio visual', 'photo'],
+    brands: [
+      'adobe', 'canva', 'riverside', 'shure', 'rode microphones', 'elgato', 'focusrite', 'sweetwater', 'b&h photo',
+      'adorama', 'dji', 'gopro', 'epidemic sound', 'artlist', 'musicbed', 'storyblocks', 'shutterstock', 'skillshare',
+      'udemy', 'coursera', 'masterclass', 'domestika', 'teachable', 'kajabi', 'thinkific', 'podia',
+    ],
+  },
+  'The Remote Desk': {
+    sectors: ['computers', 'electronic accessories', 'gadgets', 'office supplies', 'computer hw', 'peripherals', 'office'],
+    brands: [
+      'herman miller', 'steelcase', 'autonomous.ai', 'uplift desk', 'secretlab', 'logitech', 'dell', 'lenovo', 'hp',
+      'anker', 'keychron', 'benq', 'laptop outlet',
+    ],
+  },
+  'Solopreneur Operations': {
+    sectors: [
+      'business services (b2b)', 'software downloads', 'computer sw', 'business-to-business', 'productivity tools',
+      'computer support', 'online services',
+    ],
+    brands: [
+      'bonsai', 'freshbooks', 'xero', 'quickbooks', 'payoneer', 'legalzoom', 'zenbusiness', 'northwest registered agent',
+      '1password', 'nordvpn', 'surfshark', 'expressvpn', 'proton vpn', 'backblaze', 'dropbox', 'calendly',
+      'docusign', 'pandadoc', 'norton', 'bitdefender', 'kaspersky',
+    ],
+  },
 }
 
 const RULE_ORDER = [
@@ -59,7 +81,7 @@ const RULE_ORDER = [
 const AI_TEXT = /(^|[^a-z0-9])(ai|a\.i\.|gpt|chatgpt|artificial intelligence|machine learning|chatbot|ai-powered|automate|automation|automations|no-code|nocode|workflow)(?=$|[^a-z0-9])/i
 const AI_TEXT_APPLIES_TO = 'Solopreneur Operations'
 
-type Rule = { categoryId: number; title: string; pattern: RegExp }
+type Rule = { categoryId: number; title: string; sectors: Set<string>; names: RegExp | null }
 
 export type OfferFilter = {
   siteCategoriesOnly: boolean
@@ -74,10 +96,12 @@ export type OfferFilter = {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-function wordPattern(words: string[]): RegExp | null {
+function wordPattern(words: string[], { prefix = false } = {}): RegExp | null {
   const clean = words.map((w) => w.trim().toLowerCase()).filter(Boolean)
   if (!clean.length) return null
-  return new RegExp(`(^|[^a-z0-9])(${clean.map(escapeRe).join('|')})(?=$|[^a-z0-9])`, 'i')
+  // prefix: only the start must be a word boundary, so "vape" also catches "Vapesourcing".
+  const tail = prefix ? '' : '(?=$|[^a-z0-9])'
+  return new RegExp(`(^|[^a-z0-9])(${clean.map(escapeRe).join('|')})${tail}`, 'i')
 }
 
 function splitList(value?: string | null): string[] {
@@ -100,9 +124,13 @@ export async function buildOfferFilter(
 
   const rules: Rule[] = []
   for (const cat of categories.docs as any[]) {
-    const words = cat.affiliateKeywords ? splitList(cat.affiliateKeywords) : DEFAULT_KEYWORDS[cat.title] || []
-    const pattern = wordPattern(words)
-    if (pattern) rules.push({ categoryId: cat.id, title: cat.title, pattern })
+    // Admin-entered terms match both the sector and the advertiser name; defaults keep them separate.
+    const custom = splitList(cat.affiliateKeywords).map((t) => t.toLowerCase())
+    const defaults = DEFAULT_TERMS[cat.title]
+    const sectors = custom.length ? custom : (defaults?.sectors ?? [])
+    const brands = custom.length ? custom : (defaults?.brands ?? [])
+    if (!sectors.length && !brands.length) continue
+    rules.push({ categoryId: cat.id, title: cat.title, sectors: new Set(sectors), names: wordPattern(brands) })
   }
   rules.sort((a, b) => {
     const ia = RULE_ORDER.indexOf(a.title)
@@ -113,7 +141,7 @@ export async function buildOfferFilter(
   const aiRule = rules.find((r) => r.title === 'AI & Automation')
   const include = new Set(splitList(feed.includeAdvertisers).map((v) => v.toLowerCase()))
   const exclude = new Set(splitList(feed.excludeAdvertisers).map((v) => v.toLowerCase()))
-  const excludeWords = wordPattern(splitList(feed.excludeKeywords))
+  const excludeWords = wordPattern(splitList(feed.excludeKeywords), { prefix: true })
   const siteCategoriesOnly = feed.siteCategoriesOnly !== false
 
   return {
@@ -124,8 +152,8 @@ export async function buildOfferFilter(
       if (exclude.has(id) || exclude.has(name)) return null
       if (excludeWords && excludeWords.test(`${advertiserName} ${text}`)) return null
 
-      const haystack = `${sector} ${advertiserName}`
-      const rule = rules.find((r) => r.pattern.test(haystack))
+      const sectorKey = sector.trim().toLowerCase()
+      const rule = rules.find((r) => (sectorKey && r.sectors.has(sectorKey)) || r.names?.test(advertiserName))
       if (rule) {
         if (rule.title === AI_TEXT_APPLIES_TO && aiRule && AI_TEXT.test(text)) return { categoryId: aiRule.categoryId }
         return { categoryId: rule.categoryId }

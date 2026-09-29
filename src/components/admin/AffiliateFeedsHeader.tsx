@@ -45,7 +45,20 @@ function formatSync(iso?: string | null) {
   return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 }
 
-function FeedRow({ kind, feeds }: { kind: (typeof FEED_KINDS)[number]; feeds: Feed[] }) {
+// Networks with a coupon importer (see IMPORT_NETWORKS in utilities/couponImporter.ts).
+const SYNCABLE_COUPON_NETWORKS = ['awin', 'cj', 'takeads']
+
+function FeedRow({
+  kind,
+  feeds,
+  onSync,
+  syncing,
+}: {
+  kind: (typeof FEED_KINDS)[number]
+  feeds: Feed[]
+  onSync?: () => void
+  syncing?: boolean
+}) {
   const added = feeds.reduce((n, f) => n + (f.addedCount || 0), 0)
   const updated = feeds.reduce((n, f) => n + (f.updatedCount || 0), 0)
   const failed = feeds.reduce((n, f) => n + (f.failedCount || 0), 0)
@@ -92,6 +105,18 @@ function FeedRow({ kind, feeds }: { kind: (typeof FEED_KINDS)[number]; feeds: Fe
         </span>
       </div>
 
+      {onSync && (
+        <button
+          type="button"
+          onClick={onSync}
+          disabled={syncing || status === 'SYNCING'}
+          className="affiliate-btn-secondary"
+          style={{ marginTop: '8px', fontSize: '11px', padding: '4px 10px' }}
+        >
+          {syncing || status === 'SYNCING' ? 'Syncing…' : 'Sync this network'}
+        </button>
+      )}
+
       {feeds.length > 0 && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginTop: '8px' }}>
@@ -127,6 +152,7 @@ export function AffiliateFeedsHeader() {
   const [feeds, setFeeds] = useState<Feed[]>([])
   const [loadingFeeds, setLoadingFeeds] = useState(true)
   const [syncingAll, setSyncingAll] = useState(false)
+  const [syncingNetwork, setSyncingNetwork] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState('')
 
   const loadFeeds = useCallback(async () => {
@@ -166,6 +192,26 @@ export function AffiliateFeedsHeader() {
       setStatusMsg('✓ All advertiser feeds synced successfully across CJ, Awin & Showcase.')
     } finally {
       setSyncingAll(false)
+      loadFeeds()
+    }
+  }
+
+  const handleSyncNetwork = async (network: string, label: string) => {
+    setSyncingNetwork(network)
+    setStatusMsg(`Starting ${label} coupon sync...`)
+    try {
+      const res = await fetch('/api/affiliate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'import_coupons', network }),
+      })
+      const data = await res.json()
+      setStatusMsg(data.message || `${label} sync started.`)
+    } catch {
+      setStatusMsg(`✗ Could not start the ${label} sync.`)
+    } finally {
+      setSyncingNetwork(null)
       loadFeeds()
     }
   }
@@ -289,7 +335,17 @@ export function AffiliateFeedsHeader() {
                   </span>
                 </div>
                 {FEED_KINDS.map((kind) => (
-                  <FeedRow key={kind.type} kind={kind} feeds={providerFeeds.filter((f) => f.feedType === kind.type)} />
+                  <FeedRow
+                    key={kind.type}
+                    kind={kind}
+                    feeds={providerFeeds.filter((f) => f.feedType === kind.type)}
+                    onSync={
+                      kind.type === 'coupons' && SYNCABLE_COUPON_NETWORKS.includes(provider.value)
+                        ? () => handleSyncNetwork(provider.value, provider.label)
+                        : undefined
+                    }
+                    syncing={syncingNetwork === provider.value}
+                  />
                 ))}
               </div>
             )

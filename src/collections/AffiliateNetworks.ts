@@ -27,6 +27,7 @@ export const AffiliateNetworks: CollectionConfig = {
         { label: 'CJ Affiliate (Commission Junction)', value: 'cj' },
         { label: 'Awin Network', value: 'awin' },
         { label: 'Takeads Affiliate Network (Mitgo)', value: 'takeads' },
+        { label: 'Impact (impact.com / Impact Radius)', value: 'impact' },
         { label: 'Custom Deep Link', value: 'custom' },
       ],
     },
@@ -53,7 +54,7 @@ export const AffiliateNetworks: CollectionConfig = {
     {
       name: 'publisherId',
       type: 'text',
-      label: 'Publisher ID / Requestor CID',
+      label: 'Publisher ID / Requestor CID / Impact Account SID',
     },
     {
       name: 'websiteId',
@@ -90,7 +91,7 @@ export const AffiliateNetworks: CollectionConfig = {
     {
       name: 'apiToken',
       type: 'text',
-      label: 'Personal Access Token (PAT) / API Token',
+      label: 'Personal Access Token (PAT) / API Token / Impact Auth Token',
       admin: {
         description: 'Stored securely and used for GraphQL & REST API endpoints.',
       },

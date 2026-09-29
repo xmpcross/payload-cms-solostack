@@ -63,6 +63,7 @@ export const AffiliateCoupons: CollectionConfig = {
         { label: 'CJ Affiliate', value: 'cj' },
         { label: 'Awin Network', value: 'awin' },
         { label: 'Takeads', value: 'takeads' },
+        { label: 'Impact', value: 'impact' },
         { label: 'Direct Merchant', value: 'direct' },
       ],
     },

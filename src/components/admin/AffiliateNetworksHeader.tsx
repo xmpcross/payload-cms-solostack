@@ -5,7 +5,7 @@ import './AffiliateManager.css'
 
 const MASK = '••••••••••••••••••••••••'
 
-type NetworkKey = 'cj' | 'awin' | 'takeads'
+type NetworkKey = 'cj' | 'awin' | 'takeads' | 'impact'
 type NetworkDoc = {
   id: number | string
   networkType: string
@@ -45,6 +45,12 @@ export function AffiliateNetworksHeader() {
   const [takeadsMsg, setTakeadsMsg] = useState('')
   const [takeadsTesting, setTakeadsTesting] = useState(false)
 
+  // Impact: Account SID is stored as publisherId, Auth Token as apiToken
+  const [impactSid, setImpactSid] = useState('')
+  const [impactToken, setImpactToken] = useState('')
+  const [impactMsg, setImpactMsg] = useState('')
+  const [impactTesting, setImpactTesting] = useState(false)
+
   // Diagnostics state with user's actual IDs
   const [diagnosis, setDiagnosis] = useState({
     awinOutput: `https://www.awin1.com/cread.php?awinmid=12345&awinaffid=2918909&ued=https%3A%2F%2Fnike.com%2Frunning-shoes&clickref=clk_demo_902_10`,
@@ -61,7 +67,7 @@ export function AffiliateNetworksHeader() {
         const byType: Partial<Record<NetworkKey, NetworkDoc>> = {}
         for (const doc of docs) {
           const key = doc.networkType as NetworkKey
-          if (['cj', 'awin', 'takeads'].includes(key) && !byType[key]) byType[key] = doc
+          if (['cj', 'awin', 'takeads', 'impact'].includes(key) && !byType[key]) byType[key] = doc
         }
         setNetworkDocs(byType)
 
@@ -73,6 +79,10 @@ export function AffiliateNetworksHeader() {
         if (byType.awin) {
           if (byType.awin.publisherId) setAwinPubId(byType.awin.publisherId)
           setAwinToken(byType.awin.apiToken ? MASK : '')
+        }
+        if (byType.impact) {
+          if (byType.impact.publisherId) setImpactSid(byType.impact.publisherId)
+          setImpactToken(byType.impact.apiToken ? MASK : '')
         }
         if (byType.takeads) {
           const t = byType.takeads
@@ -145,9 +155,9 @@ export function AffiliateNetworksHeader() {
         body: JSON.stringify({ action: 'test_connection', network: 'cj', publisherId: cjCid }),
       })
       const data = await res.json()
-      setCjMsg(data.message || '✓ CJ GraphQL connection verified (25 Active Contracts)')
+      setCjMsg(data.message || '✗ No response from the test.')
     } catch {
-      setCjMsg('✓ CJ GraphQL connection verified for Publisher CID ' + cjCid)
+      setCjMsg('✗ Could not reach the test endpoint.')
     } finally {
       setCjTesting(false)
     }
@@ -163,9 +173,9 @@ export function AffiliateNetworksHeader() {
         body: JSON.stringify({ action: 'test_connection', network: 'awin', publisherId: awinPubId }),
       })
       const data = await res.json()
-      setAwinMsg(data.message || '✓ Awin API v2 connection verified (8 Joined Programs)')
+      setAwinMsg(data.message || '✗ No response from the test.')
     } catch {
-      setAwinMsg('✓ Awin Publisher Data API v2 connection verified for Publisher ID ' + awinPubId)
+      setAwinMsg('✗ Could not reach the test endpoint.')
     } finally {
       setAwinTesting(false)
     }
@@ -187,11 +197,29 @@ export function AffiliateNetworksHeader() {
         }),
       })
       const data = await res.json()
-      setTakeadsMsg(data.message || '✓ Takeads Account API verified (Stats & Links Active)')
+      setTakeadsMsg(data.message || '✗ No response from the test.')
     } catch {
-      setTakeadsMsg('✓ Takeads API connection verified for Platform ID ' + takeadsPlatformId)
+      setTakeadsMsg('✗ Could not reach the test endpoint.')
     } finally {
       setTakeadsTesting(false)
+    }
+  }
+
+  const handleTestImpact = async () => {
+    setImpactTesting(true)
+    setImpactMsg('Testing Impact connection...')
+    try {
+      const res = await fetch('/api/affiliate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test_connection', network: 'impact' }),
+      })
+      const data = await res.json()
+      setImpactMsg(data.message || '✗ No response from the test.')
+    } catch {
+      setImpactMsg('✗ Could not reach the test endpoint.')
+    } finally {
+      setImpactTesting(false)
     }
   }
 
@@ -257,7 +285,7 @@ export function AffiliateNetworksHeader() {
 
           <div style={{ marginTop: '16px' }}>
             {cjMsg && (
-              <p style={{ fontSize: '12px', color: '#146637', marginBottom: '8px', fontWeight: 600 }}>
+              <p style={{ fontSize: '12px', color: cjMsg.startsWith('✗') ? '#B42318' : '#146637', marginBottom: '8px', fontWeight: 600 }}>
                 {cjMsg}
               </p>
             )}
@@ -323,7 +351,7 @@ export function AffiliateNetworksHeader() {
 
           <div style={{ marginTop: '16px' }}>
             {awinMsg && (
-              <p style={{ fontSize: '12px', color: '#146637', marginBottom: '8px', fontWeight: 600 }}>
+              <p style={{ fontSize: '12px', color: awinMsg.startsWith('✗') ? '#B42318' : '#146637', marginBottom: '8px', fontWeight: 600 }}>
                 {awinMsg}
               </p>
             )}
@@ -376,7 +404,7 @@ export function AffiliateNetworksHeader() {
             </div>
 
             <div className="affiliate-field-group">
-              <label className="affiliate-label">Publish Key (Link Generation)</label>
+              <label className="affiliate-label">Publish Key (Link Generation & Coupon API)</label>
               <input
                 type="text"
                 value={takeadsPublishKey}
@@ -389,6 +417,7 @@ export function AffiliateNetworksHeader() {
                 }}
                 className="affiliate-input"
               />
+              <p className="affiliate-hint">Also used as the public API key for importing Takeads coupons.</p>
             </div>
 
             <div className="affiliate-field-group">
@@ -405,7 +434,7 @@ export function AffiliateNetworksHeader() {
 
           <div style={{ marginTop: '16px' }}>
             {takeadsMsg && (
-              <p style={{ fontSize: '12px', color: '#146637', marginBottom: '8px', fontWeight: 600 }}>
+              <p style={{ fontSize: '12px', color: takeadsMsg.startsWith('✗') ? '#B42318' : '#146637', marginBottom: '8px', fontWeight: 600 }}>
                 {takeadsMsg}
               </p>
             )}
@@ -423,6 +452,60 @@ export function AffiliateNetworksHeader() {
               className="affiliate-btn-dark affiliate-btn-full"
             >
               {takeadsTesting ? 'Testing connection...' : 'Test Takeads connection'}
+            </button>
+          </div>
+        </div>
+
+        {/* Impact Card */}
+        <div className="affiliate-card">
+          <div>
+            <div className="affiliate-card-header">
+              <h2>Impact</h2>
+              <span className="affiliate-badge-connected">
+                {networkDocs.impact?.apiToken ? 'CREDENTIALS SAVED' : 'NOT CONNECTED'}
+              </span>
+            </div>
+            <div className="affiliate-card-subtitle">impact.com (Impact Radius) Partner API</div>
+
+            <div className="affiliate-field-group">
+              <label className="affiliate-label">Account SID</label>
+              <input
+                type="text"
+                value={impactSid}
+                onChange={(e) => setImpactSid(e.target.value)}
+                className="affiliate-input"
+                placeholder="e.g. IRabc123..."
+              />
+            </div>
+
+            <div className="affiliate-field-group">
+              <label className="affiliate-label">Auth Token</label>
+              <input
+                type="password"
+                value={impactToken}
+                onChange={(e) => setImpactToken(e.target.value)}
+                className="affiliate-input"
+              />
+              <p className="affiliate-hint">Impact → Settings → API. Read-only access is enough.</p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            {impactMsg && (
+              <p style={{ fontSize: '12px', color: impactMsg.startsWith('✗') ? '#B42318' : '#146637', marginBottom: '8px', fontWeight: 600 }}>
+                {impactMsg}
+              </p>
+            )}
+            <button
+              onClick={() => saveNetwork('impact', 'Impact', { publisherId: impactSid, apiToken: impactToken }, setImpactMsg)}
+              disabled={saving === 'impact'}
+              className="affiliate-btn-secondary affiliate-btn-full"
+              style={{ marginBottom: '8px' }}
+            >
+              {saving === 'impact' ? 'Saving...' : 'Save credentials'}
+            </button>
+            <button onClick={handleTestImpact} disabled={impactTesting} className="affiliate-btn-dark affiliate-btn-full">
+              {impactTesting ? 'Testing connection...' : 'Test Impact connection'}
             </button>
           </div>
         </div>

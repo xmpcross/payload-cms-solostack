@@ -931,7 +931,7 @@ export interface Comparison {
 export interface AffiliateNetwork {
   id: number;
   name: string;
-  networkType: 'cj' | 'awin' | 'takeads' | 'custom';
+  networkType: 'cj' | 'awin' | 'takeads' | 'impact' | 'custom';
   status?: ('active' | 'inactive' | 'error') | null;
   linkStrategy: 'append_subid' | 'template';
   publisherId?: string | null;
@@ -1025,7 +1025,7 @@ export interface AffiliateCoupon {
    * Ticked automatically when you change Site Category by hand. Untick to let imports re-categorise it.
    */
   siteCategoryLocked?: boolean | null;
-  network: 'cj' | 'awin' | 'takeads' | 'direct';
+  network: 'cj' | 'awin' | 'takeads' | 'impact' | 'direct';
   /**
    * Old fixed list, kept for existing coupons. Use Site Category instead.
    */

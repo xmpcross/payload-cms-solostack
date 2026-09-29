@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { runLinkDiagnosis, generateAwinDeepLink, generateCJDeepLink } from '@/utilities/affiliateEngine'
-import { importAllCoupons, isCouponImportRunning } from '@/utilities/couponImporter'
+import { IMPORT_NETWORKS, importAllCoupons, isCouponImportRunning, type ImportNetwork } from '@/utilities/couponImporter'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -79,90 +79,109 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { action, network, publisherId, apiToken } = body
+    const { action, network } = body
 
-    // Real coupon import from Awin & CJ. Runs in the background; progress is visible on the feed records.
+    // Real coupon import (Awin, CJ, Takeads). Runs in the background; progress is visible on the feed records.
     if (action === 'import_coupons' || action === 'sync_all_advertisers' || action === 'sync') {
       const payload = await getPayload({ config: configPromise })
       const { user } = await payload.auth({ headers: request.headers })
       if (!user) {
         return NextResponse.json({ success: false, message: 'Log in to the admin to run imports.' }, { status: 401 })
       }
-      const alreadyRunning = isCouponImportRunning()
-      importAllCoupons(payload).catch((err) => payload.logger.error(`[couponImporter] ${err?.message}`))
+      // Optional `network` syncs a single network; otherwise all networks with an importer.
+      const only = IMPORT_NETWORKS.find((n) => n === network)
+      if (action === 'import_coupons' && network && !only) {
+        return NextResponse.json({ success: false, message: `No coupon importer for "${network}" yet.` }, { status: 400 })
+      }
+      const targets: ImportNetwork[] = only ? [only] : IMPORT_NETWORKS
+      const alreadyRunning = targets.every((n) => isCouponImportRunning(n))
+      importAllCoupons(payload, targets).catch((err) => payload.logger.error(`[couponImporter] ${err?.message}`))
       if (action === 'import_coupons') {
+        const label = only ? only.toUpperCase() : 'all networks'
         return NextResponse.json({
           success: true,
           message: alreadyRunning
-            ? 'Coupon import already running. Feed status updates when it finishes.'
-            : 'Coupon import started for Awin & CJ. This can take several minutes; refresh to see progress.',
+            ? `${label} import is already running. The feed status updates when it finishes.`
+            : `${label} coupon import started. This can take several minutes; refresh to see progress.`,
         })
       }
     }
 
+    // Real connection tests using the saved credentials (save before testing).
     if (action === 'test_connection') {
       const payload = await getPayload({ config: configPromise })
-      const networkDocs = await payload.find({
-        collection: 'affiliate-networks',
-        where: { networkType: { equals: network } },
-        limit: 1,
-      })
-      const activeNetwork = networkDocs.docs[0] as any
-      const token = apiToken || activeNetwork?.apiToken || (network === 'cj' ? 'I6RdTp0hEscu0v_O6C_wLoMOcQ' : '4fe4b17c-16d0-4a18-93f9-1ecdee4c70ed')
-      const pubId = publisherId || activeNetwork?.publisherId || (network === 'cj' ? '5724573' : '2918909')
-
-      if (network === 'cj') {
-        try {
-          const cjRes = await fetch('https://programs.api.cj.com/query', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              query: `{ publisher { contracts(publisherId: "${pubId}", limit: 5) { totalCount } } }`,
-            }),
-          })
-          const cjData = await cjRes.json()
-          const totalCount = cjData?.data?.publisher?.contracts?.totalCount ?? 25
-          return NextResponse.json({
-            success: true,
-            message: `✓ CJ Affiliate GraphQL connection verified for Publisher CID ${pubId} (${totalCount} active advertiser contracts).`,
-          })
-        } catch {
-          return NextResponse.json({
-            success: true,
-            message: `✓ CJ Affiliate REST & GraphQL connection verified for Publisher CID ${pubId} (25 active contracts).`,
-          })
-        }
+      const { user } = await payload.auth({ headers: request.headers })
+      if (!user) {
+        return NextResponse.json({ success: false, message: 'Log in to the admin to test connections.' }, { status: 401 })
       }
-
-      if (network === 'awin') {
-        try {
-          const awinRes = await fetch(`https://api.awin.com/publishers/${pubId}/programmes?relationship=joined`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-          const awinData = await awinRes.json()
-          const totalJoined = Array.isArray(awinData) ? awinData.length : 8
-          return NextResponse.json({
-            success: true,
-            message: `✓ Awin Publisher Data API v2 verified for Publisher ID ${pubId} (${totalJoined} joined merchant programs).`,
-          })
-        } catch {
-          return NextResponse.json({
-            success: true,
-            message: `✓ Awin Publisher Data API v2 connection verified for Publisher ID ${pubId} (8 joined merchant programs).`,
-          })
-        }
-      }
-
-      if (network === 'takeads') {
-        return NextResponse.json({
-          success: true,
-          message: `✓ Takeads Cookieless Content Monetization API verified (Native Auto-Monetization Active).`,
+      const creds = (
+        await payload.find({
+          collection: 'affiliate-networks',
+          where: { networkType: { equals: network } },
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
         })
+      ).docs[0] as any
+      const fail = (message: string) => NextResponse.json({ success: false, message: `✗ ${message}` })
+      if (!creds) return fail('No saved credentials for this network. Save them first.')
+
+      try {
+        if (network === 'cj') {
+          if (!creds.websiteId || !creds.apiToken) return fail('CJ needs a Website ID (PID) and Personal Access Token.')
+          const params = new URLSearchParams({
+            'website-id': creds.websiteId,
+            'advertiser-ids': 'joined',
+            'promotion-type': 'coupon',
+            'records-per-page': '1',
+          })
+          const res = await fetch(`https://link-search.api.cj.com/v2/link-search?${params}`, {
+            headers: { Authorization: `Bearer ${creds.apiToken}` },
+          })
+          const body = await res.text()
+          const error = body.match(/<error-message>([\s\S]*?)<\/error-message>/)?.[1]
+          if (!res.ok || error) return fail(`CJ rejected the request (${res.status}): ${(error || body).slice(0, 200)}`)
+          const total = body.match(/total-matched="(\d+)"/)?.[1] ?? '?'
+          return NextResponse.json({ success: true, message: `✓ CJ connected. ${total} coupon links from joined advertisers.` })
+        }
+
+        if (network === 'awin') {
+          if (!creds.publisherId || !creds.apiToken) return fail('Awin needs a Publisher ID and API token.')
+          const res = await fetch(`https://api.awin.com/publishers/${creds.publisherId}/programmes?relationship=joined`, {
+            headers: { Authorization: `Bearer ${creds.apiToken}` },
+          })
+          if (!res.ok) return fail(`Awin rejected the request (${res.status}): ${(await res.text()).slice(0, 200)}`)
+          const list = await res.json()
+          return NextResponse.json({
+            success: true,
+            message: `✓ Awin connected. ${Array.isArray(list) ? list.length : '?'} joined programmes.`,
+          })
+        }
+
+        if (network === 'takeads') {
+          if (!creds.publishKey) return fail('Takeads needs the Publish Key (used as the API public key).')
+          const res = await fetch('https://api.takeads.com/v1/product/monetize-api/v1/coupon?limit=1', {
+            headers: { Authorization: `Bearer ${creds.publishKey}` },
+          })
+          if (!res.ok) return fail(`Takeads rejected the Publish Key (${res.status}).`)
+          return NextResponse.json({ success: true, message: '✓ Takeads connected. Coupon API is accessible.' })
+        }
+
+        if (network === 'impact') {
+          if (!creds.publisherId || !creds.apiToken) return fail('Impact needs an Account SID and Auth Token.')
+          const auth = Buffer.from(`${creds.publisherId}:${creds.apiToken}`).toString('base64')
+          const res = await fetch(`https://api.impact.com/Mediapartners/${creds.publisherId}/Campaigns?PageSize=1`, {
+            headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+          })
+          if (!res.ok) return fail(`Impact rejected the request (${res.status}): ${(await res.text()).slice(0, 200)}`)
+          const json = await res.json()
+          const total = json?.['@total'] ?? json?.['@numrecords'] ?? '?'
+          return NextResponse.json({ success: true, message: `✓ Impact connected. ${total} campaigns (programs) available.` })
+        }
+
+        return fail(`Unknown network: ${network}`)
+      } catch (err: any) {
+        return fail(`Could not reach the ${network} API: ${err?.message || err}`)
       }
     }
 
@@ -182,11 +201,11 @@ export async function POST(request: Request) {
       ]
 
       // Each provider gets two separate feed records: one for coupons, one for products.
-      // Awin & CJ coupon feeds are maintained by the real importer (started above). The rest have
+      // Coupon feeds with an importer (IMPORT_NETWORKS) are maintained by it (started above). The rest have
       // no importer yet, so they are only created (paused, zero counts) and otherwise left alone.
       for (const provider of providers) {
         for (const ft of feedTypes) {
-          if (ft.type === 'coupons' && (provider.net === 'awin' || provider.net === 'cj')) continue
+          if (ft.type === 'coupons' && IMPORT_NETWORKS.includes(provider.net as ImportNetwork)) continue
           const existing = await payload.find({
             collection: 'affiliate-feeds',
             where: {
@@ -211,7 +230,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Feeds refreshed. Awin & CJ coupon import started in the background — refresh in a few minutes to see results.`,
+        message: `Coupon import started for Awin, CJ and Takeads in the background — refresh in a few minutes to see results.`,
       })
     }
 
