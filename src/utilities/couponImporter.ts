@@ -77,7 +77,7 @@ const AWIN_DELAY_MS = 3200 // Awin publisher API: 20 requests/minute
 const CJ_PAGE_SIZE = 100 // Link Search max records-per-page
 const CJ_DELAY_MS = 2600 // CJ REST APIs: 25 requests/minute
 const TAKEADS_PAGE_SIZE = 100
-const TAKEADS_DELAY_MS = 1200
+const TAKEADS_DELAY_MS = 250
 const CJ_PROMOTION_TYPES = ['coupon', 'sale/discount', 'free shipping']
 const STALE_LOCK_MS = 3 * 60 * 60 * 1000
 const MAX_PER_ADVERTISER = 25 // per sync, so one brand can't flood the deals page
@@ -334,49 +334,53 @@ async function* fetchCj(
 /* ------------------------------------------------------------------ */
 
 const TAKEADS_API = 'https://api.takeads.com/v1/product/monetize-api'
+// Only coupons updated within this window are requested. The full feed is mostly expired offers
+// (about 4% are active), and scanning it all takes 10x longer. Active coupons are refreshed often.
+const TAKEADS_LOOKBACK_DAYS = 120
 
-/** Merchant ID → name & domain. Coupons only carry merchantId. */
-async function fetchTakeadsMerchants(publicKey: string) {
-  const merchants = new Map<number, { name: string; domain: string }>()
-  let next = ''
-  for (;;) {
-    const res = await fetch(`${TAKEADS_API}/v2/merchant?limit=${TAKEADS_PAGE_SIZE}${next ? `&next=${next}` : ''}`, {
-      headers: { Authorization: `Bearer ${publicKey}` },
-    })
-    if (!res.ok) throw new Error(`Takeads merchant API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
-    const json = await res.json()
-    const items: any[] = Array.isArray(json?.data) ? json.data : []
-    for (const m of items) {
-      if (m?.merchantId != null) merchants.set(m.merchantId, { name: String(m.name || ''), domain: String(m.defaultDomain || '') })
-    }
-    next = json?.meta?.next
-    if (!next || !items.length) return merchants
-    await sleep(TAKEADS_DELAY_MS)
-  }
+/** One merchant by ID. The merchant cursor is the ID, so limit=1 from that ID returns it directly. */
+async function fetchTakeadsMerchant(publicKey: string, merchantId: number) {
+  const res = await fetch(`${TAKEADS_API}/v2/merchant?limit=1&next=${merchantId}`, {
+    headers: { Authorization: `Bearer ${publicKey}` },
+  })
+  if (!res.ok) throw new Error(`Takeads merchant API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
+  const m = (await res.json())?.data?.[0]
+  if (!m || m.merchantId !== merchantId) return null
+  return { name: String(m.name || ''), domain: String(m.defaultDomain || '') }
 }
 
 async function* fetchTakeads(publicKey: string, regions: string[]) {
-  const merchants = await fetchTakeadsMerchants(publicKey)
+  const merchants = new Map<number, { name: string; domain: string } | null>()
+  const since = new Date(Date.now() - TAKEADS_LOOKBACK_DAYS * 86_400_000).toISOString()
   let next = ''
   for (;;) {
-    const params = new URLSearchParams({ limit: String(TAKEADS_PAGE_SIZE) })
-    if (regions.length) params.set('countryCodes', regions.join(','))
+    const params = new URLSearchParams({ limit: String(TAKEADS_PAGE_SIZE), isActive: 'true', updatedAtFrom: since })
     if (next) params.set('next', next)
     const res = await fetch(`${TAKEADS_API}/v1/coupon?${params}`, { headers: { Authorization: `Bearer ${publicKey}` } })
     if (!res.ok) throw new Error(`Takeads coupon API ${res.status}: ${(await res.text()).slice(0, 1000)}`)
     const json = await res.json()
     const items: any[] = Array.isArray(json?.data) ? json.data : []
 
-    const coupons: NormalizedCoupon[] = []
-    for (const c of items) {
-      // The feed keeps old offers; only active ones in a target country, in English.
-      if (!c?.couponId || !c.isActive || !c.trackingLink) continue
+    // Keep only active offers valid in a target country, in English.
+    const candidates = items.filter((c) => {
+      if (!c?.couponId || !c.isActive || !c.trackingLink || !c.name) return false
       const countries: string[] = (c.countryCodes || []).map((x: string) => String(x).toUpperCase())
-      if (regions.length && !countries.some((x) => regions.includes(x))) continue
+      if (regions.length && !countries.some((x) => regions.includes(x))) return false
       const langs: string[] = (c.languageCodes || []).map((x: string) => String(x).toLowerCase())
-      if (regions.length && langs.length && !langs.includes('en')) continue
+      return !(regions.length && langs.length && !langs.includes('en'))
+    })
+
+    // Look up only the merchants these coupons belong to (cached across pages).
+    for (const c of candidates) {
+      if (merchants.has(c.merchantId)) continue
+      merchants.set(c.merchantId, await fetchTakeadsMerchant(publicKey, c.merchantId))
+      await sleep(TAKEADS_DELAY_MS)
+    }
+
+    const coupons: NormalizedCoupon[] = []
+    for (const c of candidates) {
       const merchant = merchants.get(c.merchantId)
-      if (!merchant?.name || !c.name) continue
+      if (!merchant?.name) continue
       coupons.push({
         externalId: `takeads:${c.couponId}`,
         title: truncate(String(c.name), 250)!,

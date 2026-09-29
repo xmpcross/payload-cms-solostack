@@ -166,7 +166,8 @@ export function AffiliateFeedsHeader() {
       const data = await res.json()
       const docs: Feed[] = Array.isArray(data?.docs) ? data.docs : []
       setFeeds(docs)
-      const networks = [...new Set(docs.map((f) => f.network))]
+      // Coupons only exist for these networks (others would be rejected by the API).
+      const networks = [...new Set(docs.map((f) => f.network))].filter((n) => ['cj', 'awin', 'takeads', 'impact', 'direct'].includes(n))
       const counts = await Promise.all(
         networks.map(async (network) => {
           const params = new URLSearchParams({
