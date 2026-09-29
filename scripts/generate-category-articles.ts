@@ -4,6 +4,7 @@ import path from 'node:path'
 import sharp from 'sharp'
 import { getPayload } from 'payload'
 import config from '../src/payload.config'
+import { structuredArticles, type ArticleDef } from './article-content'
 
 const FAL_KEY = process.env.FAL_KEY
 
@@ -492,6 +493,48 @@ const articlesData = [
     ],
   },
 ]
+
+// --- Structured articles (scripts/article-content.ts) -> Lexical nodes ---
+
+/** Inline markup: **bold** and [label](/path) links. */
+function inline(text: string): any[] {
+  const nodes: any[] = []
+  const re = /\*\*(.+?)\*\*|\[([^\]]+)\]\((\/[^)\s]*)\)/g
+  let last = 0
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    if (m.index > last) nodes.push(t(text.slice(last, m.index)))
+    if (m[1]) nodes.push(t(m[1], 1))
+    else nodes.push(link(m[3], m[2], 1))
+    last = m.index + m[0].length
+  }
+  if (last < text.length) nodes.push(t(text.slice(last)))
+  return nodes
+}
+
+function buildContent(a: ArticleDef): any[] {
+  const out: any[] = [banner(a.banner[0], a.banner[1], a.banner[2]), p(inline(a.intro))]
+  for (const section of a.sections) {
+    out.push(h('h2', section.h))
+    for (const para of section.p || []) out.push(p(inline(para)))
+    if (section.list) out.push(ul(section.list.map(([label, text]) => [t(`${label}: `, 1), ...inline(text)])))
+    if (section.banner) out.push(banner(section.banner[0], section.banner[1], section.banner[2]))
+  }
+  out.push(h('h2', 'Next Steps'), p(inline(a.closing)))
+  return out
+}
+
+for (const a of structuredArticles) {
+  articlesData.push({
+    categorySlug: a.categorySlug,
+    title: a.title,
+    slug: a.slug,
+    heroPrompt: a.heroPrompt,
+    imageFilename: a.slug,
+    metaTitle: a.metaTitle,
+    metaDescription: a.metaDescription,
+    content: buildContent(a),
+  })
+}
 
 async function main() {
   console.log('Initializing Payload CMS...')
